@@ -1,2 +1,2 @@
-# hxs
-Run haxe-compatible classes with hscript interpreter
+# scriptable
+Turn haxe classes into scriptable/hot-reloadable code using hscript
