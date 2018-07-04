@@ -1,0 +1,8 @@
+-lib hscript
+-lib hxnodejs
+-lib unifill
+-js main.js
+-main test.Main
+-cp .
+-D hxs_scriptable
+-D hscriptPos
