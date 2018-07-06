@@ -3,8 +3,15 @@
     function new(name:String) {
         
         this.name = name;
+        this.name = "WHAT";
 
-    } //name
+        this.someMap = [
+            ',)' => [',' => true, ')' => true],
+            '}' => ['}' => true],
+            ';' => [';' => true]
+        ];
+
+    }
 
     function hello():Void {
 

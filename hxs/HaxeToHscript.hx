@@ -1,5 +1,9 @@
 package hxs;
 
+// TODO convert arrow functions () -> { }
+// TODO convert combined switches switch [a, b] { case [_, 'something']: ... }
+// TODO convert explicit cast
+
 import hxs.Types;
 
 using StringTools;
@@ -8,9 +12,13 @@ class HaxeToHscript {
 
     var haxe(default,null):String;
 
+    var cleanedHaxe(default,null):String;
+
     var hscript(default,null):String;
 
     public var imports(default,null):Array<TImport>;
+
+    public var usings(default,null):Array<TUsing>;
 
     public var fields(default,null):Array<TField>;
 
@@ -18,9 +26,11 @@ class HaxeToHscript {
 
     public var comments(default,null):Array<TComment>;
 
+    public var modifiers(default,null):Array<TModifier>;
+
     public function new(haxe:String) {
 
-        this.haxe = haxe;
+        this.haxe = haxe.replace("\r", '');
 
     } //new
 
@@ -38,6 +48,14 @@ class HaxeToHscript {
 
     var after = '';
 
+    var cleanedC = '';
+
+    var cleanedCC = '';
+
+    var cleanedAfter = '';
+
+    var word = '';
+
     var openBraces = 0;
 
     var openParens = 0;
@@ -46,20 +64,29 @@ class HaxeToHscript {
 
     public function convert():Void {
 
+        // Generate cleaned haxe code
+        cleanedHaxe = codeWithoutComments(haxe).replace("\n", ' ');
+
         // Reset data
         //
         imports = [];
+        usings = [];
         fields = [];
         comments = [];
         metas = [];
+        modifiers = [];
         hscript = null;
 
         output = new StringBuf();
         i = 0;
-        len = 0;
+        len = haxe.length;
         c = '';
         cc = '';
         after = '';
+        cleanedC = '';
+        cleanedCC = '';
+        cleanedAfter = '';
+        word = '';
 
         openBraces = 0;
         openParens = 0;
@@ -79,6 +106,36 @@ class HaxeToHscript {
             else if (c == '@') {
                 consumeMeta();
             }
+            else {
+                updateCleanedAfter();
+                updateAfter();
+                updateWord();
+                
+                if (MODIFIERS.exists(word)) {
+                    modifiers.push({
+                        pos: i,
+                        name: word
+                    });
+                    i += word.length;
+                }
+                else if (word == 'import') {
+                    consumeImport();
+                }
+                else if (word == 'using') {
+                    consumeUsing();
+                }
+                else if (word == 'var' || word == 'final') {
+                    consumeVar();
+                    i++;
+                }
+                else if (word == 'function') {
+                    consumeMethod();
+                    i++;
+                }
+                else {
+                    i++;
+                }
+            }
 
         }
 
@@ -87,8 +144,8 @@ class HaxeToHscript {
 
     } //convert
 
-    // Declare helpers
-    //
+/// Conversion helpers
+
     inline function updateC() {
 
         c = haxe.charAt(i);
@@ -114,12 +171,51 @@ class HaxeToHscript {
 
     } //updateAfter
 
-    function consumeExpression(until:String):{stop:String, expr:String} {
+    inline function updateCleanedC() {
+
+        cleanedC = cleanedHaxe.charAt(i);
+
+    } //updateCleanedC
+
+    inline function updateCleanedCC() {
+
+        cleanedCC = cleanedHaxe.substr(i, 2);
+
+    } //updateCleanedCC
+
+    inline function updateCleanedCAndCC() {
+
+        updateCleanedC();
+        updateCleanedCC();
+
+    } //updateCleanedCAndCC
+
+    inline function updateCleanedAfter() {
+
+        cleanedAfter = cleanedHaxe.substring(i);
+
+    } //updateCleanedAfter
+
+    inline function updateWord() {
+
+        if (i > 0 && RE_SEP_WORD.match(haxe.charAt(i-1) + after)) {
+            word = RE_SEP_WORD.matched(1);
+        }
+        else if (i == 0 && RE_WORD.match(after)) {
+            word = RE_WORD.matched(0);
+        }
+        else {
+            word = '';
+        }
+
+    } //updateWord
+
+    function consumeExpression(until:String, ?expr:StringBuf):{stop:String, expr:String} {
 
         var untilMap = UNTIL_MAPS[until];
-        if (untilMap == null) fail('Invalid expression until: $until');
+        if (untilMap == null) fail('Invalid expression until: $until', i, haxe);
 
-        var expr = new StringBuf();
+        var _expr = new StringBuf();
 
         var openParensStart = openParens;
         var openBracesStart = openBraces;
@@ -130,35 +226,39 @@ class HaxeToHscript {
         var stopAtBraceClose = untilMap.exists('}');
         var stopAtBracketClose = untilMap.exists(']');
         var stopAtComa = untilMap.exists(',');
+        var stopAtSemicolon = untilMap.exists(';');
 
         while (i < len) {
             updateCAndCC();
 
             if (cc == '//') {
-                consumeSingleLineComment(expr);
+                consumeSingleLineComment(_expr);
             }
             else if (cc == '/*') {
-                consumeMultiLineComment(expr);
+                consumeMultiLineComment(_expr);
             }
             else if (c == '@') {
-                consumeMeta(expr);
+                consumeMeta(_expr);
             }
             else if (c == '\'') {
-                consumeSingleQuotedString(expr);
+                consumeSingleQuotedString(_expr);
             }
             else if (c == '"') {
-                consumeDoubleQuotedString(expr);
+                consumeDoubleQuotedString(_expr);
             }
             else if (c == '(') {
                 openParens++;
+                _expr.add('(');
                 i++;
             }
             else if (c == '{') {
                 openBraces++;
+                _expr.add('{');
                 i++;
             }
             else if (c == '[') {
                 openBrackets++;
+                _expr.add('[');
                 i++;
             }
             else if (c == ')') {
@@ -167,6 +267,7 @@ class HaxeToHscript {
                     break;
                 }
                 openParens--;
+                _expr.add(')');
                 i++;
             }
             else if (c == '}') {
@@ -175,6 +276,7 @@ class HaxeToHscript {
                     break;
                 }
                 openBraces--;
+                _expr.add('}');
                 i++;
             }
             else if (c == ']') {
@@ -183,27 +285,280 @@ class HaxeToHscript {
                     break;
                 }
                 openBrackets--;
+                _expr.add(']');
                 i++;
+            }
+            else if (cc == '->') {
+                i += 2; // TODO
             }
             else if (c == ',') {
                 if (stopAtComa && openParens == openParensStart && openBraces == openBracesStart && openBrackets == openBracketsStart) {
                     stop = c;
                     break;
                 }
+                _expr.add(',');
+                i++;
+            }
+            else if (c == ';') {
+                if (stopAtSemicolon && openParens == openParensStart && openBraces == openBracesStart && openBrackets == openBracketsStart) {
+                    stop = c;
+                    break;
+                }
+                _expr.add(';');
                 i++;
             }
             else {
-                expr.add(c);
-                i++;
+                updateCleanedAfter();
+                updateAfter();
+                updateWord();
+
+                if (MODIFIERS.exists(word)) {
+                    i += word.length;
+                }
+                else if (word == 'var' || word == 'final') {
+                    consumeVar(_expr);
+                }
+                else if (word == 'cast') {
+                    consumeCast(_expr);
+                }
+                else if (word == 'new') {
+                    consumeNew(_expr);
+                }
+                else if (word == 'function') {
+                    _expr.add(word);
+                    i += word.length;
+                    // TODO consumeFunction()
+                }
+                else {
+                    _expr.add(c);
+                    i++;
+                }
             }
+        }
+
+        var exprStr = _expr.toString();
+
+        if (expr != null) {
+            expr.add(exprStr);
         }
 
         return {
             stop: stop,
-            expr: expr.toString()
+            expr: exprStr
         };
 
     } //consumeExpression
+
+    function consumeImport() {
+
+        // We assume cleanedAfter is up to date
+
+        if (!RE_IMPORT.match(cleanedAfter)) {
+            fail('Invalid import', i, haxe);
+        }
+
+        var path = RE_IMPORT.matched(1);
+        var alias = RE_IMPORT.matched(2);
+
+        var imp:TImport = {
+            pos: i,
+            path: path,
+            alias: alias != null && alias != '' ? alias : null
+        };
+        imports.push(imp);
+
+        i += RE_IMPORT.matched(0).length;
+
+    } //consumeImport
+
+    function consumeUsing() {
+
+        // We assume cleanedAfter is up to date
+
+        if (!RE_USING.match(cleanedAfter)) {
+            fail('Invalid using', i, haxe);
+        }
+
+        var path = RE_USING.matched(1);
+
+        var imp:TUsing = {
+            pos: i,
+            path: path
+        };
+        usings.push(imp);
+
+        i += RE_USING.matched(0).length;
+
+    } //consumeUsing
+
+    function consumeVar(?expr:StringBuf) {
+
+        // We assume cleanedAfter is up to date
+
+        if (!RE_VAR.match(cleanedAfter)) {
+            fail('Invalid var', i, haxe);
+        }
+
+        //var isFinal = RE_VAR.matched(1) == 'final';
+        var name = RE_VAR.matched(2);
+        var get = RE_VAR.matched(3);
+        var set = RE_VAR.matched(4);
+        var type = RE_VAR.matched(5);
+        var stop = RE_VAR.matched(6);
+
+        var field:TField = {
+            pos: i,
+            kind: VAR,
+            name: name,
+            type: type
+        };
+
+        if (get != null && get != '') {
+            field.get = get;
+        }
+
+        if (set != null && set != '') {
+            field.set = set;
+        }
+
+        i += RE_VAR.matched(0).length;
+        if (stop == '=') {
+            field.expr = consumeExpression(';').expr.trim();
+            i++;
+        }
+
+        if (expr != null) {
+            expr.add('var $name');
+            if (field.expr != null) {
+                expr.add(' = ' + field.expr);
+            }
+            expr.add(';');
+        } else {
+            fields.push(field);
+        }
+
+    } //consumeVar
+
+    function consumeCast(?expr:StringBuf) {
+
+        // We assume cleanedAfter is up to date
+        
+        if (!RE_CAST.match(cleanedAfter)) {
+            fail('Invalid cast', i, haxe);
+        }
+
+        var hasParen = RE_CAST.matched(1) == '(';
+        i += RE_CAST.matched(0).length;
+
+        if (hasParen) {
+            var result;
+            var gotFirstExpr = false;
+            do {
+                result = consumeExpression(',)');
+                if (!gotFirstExpr) {
+                    gotFirstExpr = true;
+                    if (expr != null) expr.add('(' + result.expr + ')');
+                }
+                i++;
+            }
+            while (result.stop == ',');
+        }
+
+    } //consumeCast
+
+    function consumeNew(?expr:StringBuf) {
+
+        // We assume cleanedAfter is up to date
+        
+        if (!RE_NEW.match(cleanedAfter)) {
+            fail('Invalid new', i, haxe);
+        }
+
+        if (expr != null) {
+            expr.add('new ');
+            expr.add(RE_NEW.matched(1));
+            expr.add('(');
+        }
+
+        i += RE_NEW.matched(0).length;
+
+        var result = consumeExpression(')');
+        if (expr != null) {
+            expr.add(result.expr);
+            expr.add(')');
+        }
+
+        i++;
+
+    } //consumeNew
+
+    function consumeMethod() {
+
+        // We assume cleanedAfter is up to date
+
+        if (!RE_METHOD.match(cleanedAfter)) {
+            fail('Invalid method', i, haxe);
+        }
+
+        var name = RE_METHOD.matched(1);
+        var pos = i;
+        var ret:String = null;
+
+        i += RE_METHOD.matched(0).length;
+        openParens++;
+
+        // Parse args
+        var args = [];
+        var result;
+        do {
+            result = consumeExpression(',)');
+            if (result.expr != '') {
+                var arg = parseNamedArg(result.expr);
+                args.push(arg);
+            }
+            i++;
+        }
+        while (result.stop == ',');
+
+        openParens--;
+
+        // Parse return type and body
+        updateCleanedAfter();
+        var body:String;
+        if (RE_FUNC_BLOCK_START.match(cleanedAfter)) {
+
+            ret = RE_FUNC_BLOCK_START.matched(2);
+            i += RE_FUNC_BLOCK_START.matched(0).length;
+
+            // Block with braces
+            openBraces++;
+            body = '{' + consumeExpression('}').expr + '}';
+            i++;
+            openBraces--;
+        }
+        else {
+            if (RE_FUNC_RET_TYPE.match(cleanedAfter)) {
+                ret = RE_FUNC_RET_TYPE.matched(2);
+                i += RE_FUNC_RET_TYPE.matched(0).length;
+            }
+
+            // Body without braces
+            body = consumeExpression(';').expr.ltrim() + ';';
+            i++;
+        }
+
+        var field:TField = {
+            pos: pos,
+            kind: METHOD,
+            name: name,
+            type: ret,
+            args: args,
+            expr: body
+        };
+
+        fields.push(field);
+
+    } //consumeMethod
 
     function consumeSingleLineComment(?expr:StringBuf) {
 
@@ -271,22 +626,100 @@ class HaxeToHscript {
 
     function consumeSingleQuotedString(?expr:StringBuf) {
 
-        // TODO
-        // convert string interpolation
+        inline function add(str:String) {
+            if (expr != null) expr.add(str);
+        }
+
+        i++;
+        add('\'');
+
+        while (i < len) {
+            updateCAndCC();
+
+            if (c == '\\') {
+                i += 2;
+                add(cc);
+            }
+            else if (cc == "$$") {
+                i += 2;
+                add(cc);
+            }
+            else if (cc == "${") {
+                i += 2;
+                openBraces++;
+                add('\'+(');
+                consumeExpression('}', expr);
+                openBraces--;
+                add(')+\'');
+                i++;
+            }
+            else if (c == "$") {
+                i++;
+                add('\'+');
+                consumeWord(expr);
+                add('+\'');
+            }
+            else if (c == '\'') {
+                i++;
+                add('\'');
+                break;
+            }
+            else {
+                i++;
+                add(c);
+            }
+        }
 
     } //consumeSingleQuotedString
 
     function consumeDoubleQuotedString(?expr:StringBuf) {
 
-        // TODO
+        inline function add(str:String) {
+            if (expr != null) expr.add(str);
+        }
+
+        i++;
+        add('"');
+
+        while (i < len) {
+            updateCAndCC();
+
+            if (c == '\\') {
+                i += 2;
+                add(cc);
+            }
+            else if (c == '"') {
+                i++;
+                add('"');
+                break;
+            }
+            else {
+                i++;
+                add(c);
+            }
+        }
 
     } //consumeDoubleQuotedString
 
-    function consumeMeta(?expr:StringBuf) {
+    function consumeWord(?expr:StringBuf) {
+
         updateAfter();
 
-        if (!RE_META.match(after)) {
-            fail('Invalid meta', i);
+        if (!RE_WORD.match(after)) {
+            fail('Invalid token', i, haxe);
+        }
+
+        if (expr != null) expr.add(RE_WORD.matched(0));
+        i += RE_WORD.matched(0).length;
+
+    } //consumeWord
+
+    function consumeMeta(?expr:StringBuf) {
+
+        updateCleanedAfter();
+
+        if (!RE_META.match(cleanedAfter)) {
+            fail('Invalid meta', i, haxe);
         }
 
         var name = (RE_META.matched(1) != null ? RE_META.matched(1) : '') + RE_META.matched(2);
@@ -324,7 +757,44 @@ class HaxeToHscript {
 
     } //consumeMeta
 
+    function parseNamedArg(rawArg:String) {
+
+        rawArg = rawArg.trim();
+
+        if (!RE_NAMED_ARG.match(rawArg)) {
+            fail('Invalid argument', i, haxe);
+        }
+
+        var arg:TArg = {
+            pos: i,
+            name: RE_NAMED_ARG.matched(1),
+            type: RE_NAMED_ARG.matched(2),
+            expr: RE_NAMED_ARG.matched(3)
+        };
+
+        return arg;
+
+    } //parseArg
+
+    function isArrowFunction():Bool {
+
+        
+
+        return false;
+
+    } //isArrowFunction
+
 /// Helpers
+
+    static function fail(error:Dynamic, pos:Int, code:String) {
+
+        // TODO proper error formatting
+
+        trace(code.substr(pos, 100));
+
+        throw '' + error;
+
+    } //fail
 
     static function cleanComment(comment:String):String {
 
@@ -360,18 +830,83 @@ class HaxeToHscript {
 
     } //cleanComment
 
-    static function fail(error:Dynamic, ?pos:Int) {
+    static function codeWithoutComments(code:String) {
 
-        // TODO proper error formatting
+        var i = 0;
+        var c = '';
+        var cc = '';
+        var after = '';
+        var len = code.length;
+        var inSingleLineComment = false;
+        var inMultiLineComment = false;
+        var result = new StringBuf();
 
-        throw '' + error;
+        while (i < len) {
 
-    } //fail
+            c = code.charAt(i);
+            cc = i + 1 < len ? (c + code.charAt(i + 1)) : c;
 
-/// Until maps
+            if (inSingleLineComment) {
+                if (c == "\n") {
+                    inSingleLineComment = false;
+                }
+                result.add(' ');
+                i++;
+            }
+            else if (inMultiLineComment) {
+                if (cc == '*/') {
+                    inMultiLineComment = false;
+                    result.add('  ');
+                    i += 2;
+                } else {
+                    result.add(' ');
+                    i++;
+                }
+            }
+            else if (cc == '//') {
+                inSingleLineComment = true;
+                result.add('  ');
+                i += 2;
+            }
+            else if (cc == '/*') {
+                inMultiLineComment = true;
+                result.add('  ');
+                i += 2;
+            }
+            else if (c == '"' || c == '\'') {
+                after = code.substring(i);
+                if (!RE_STRING.match(after)) {
+                    fail('Invalid string', i, code);
+                }
+                result.add(RE_STRING.matched(0));
+                i += RE_STRING.matched(0).length;
+            }
+            else {
+                result.add(c);
+                i++;
+            }
+        }
+
+        return result.toString();
+
+    } //codeWithEmptyCommentsAndStrings
+
+/// Maps
 
     static var UNTIL_MAPS = [
-        ',)' => [',' => true, ')' => true]
+        ',)' => [',' => true, ')' => true],
+        ')' => [')' => true],
+        '}' => ['}' => true],
+        ';' => [';' => true],
+        '>' => ['>' => true]
+    ];
+
+    static var MODIFIERS = [
+        'inline' => true,
+        'static' => true,
+        'public' => true,
+        'protected' => true,
+        'dynamic' => true
     ];
 
 /// Regular expressions
@@ -381,5 +916,29 @@ class HaxeToHscript {
     static var RE_AFTER_COMMENT_LINE = ~/[\s\*]*$/g;
 
     static var RE_META = ~/^@(:)?([a-zA-Z_][a-zA-Z_0-9]*)(\s*)(\()?/g;
+    
+    static var RE_WORD = ~/^[a-zA-Z0-9_]+/;
+
+    static var RE_SEP_WORD = ~/^[^a-zA-Z0-9_]([a-zA-Z0-9_]+)/;
+
+    static var RE_IMPORT = ~/^import\s+([^;\s]+)\s*(?:(?:as|in)\s*([^;\s]+)\s*)?;/;
+
+    static var RE_USING = ~/^using\s+([^;\s]+)\s*;/;
+
+    static var RE_VAR = ~/^(var|final)\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*\(\s*(get|null|never|default)\s*,\s*(set|null|never|default)\s*\))?(?:\s*:\s*([^=;]+))?(?:\s*(=|;))?/;
+
+    static var RE_METHOD = ~/^function\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?\s*\(/;
+
+    static var RE_STRING = ~/^(?:"(?:[^"\\]*(?:\\.[^"\\]*)*)"|'(?:[^'\\]*(?:\\.[^'\\]*)*)')/;
+
+    static var RE_NAMED_ARG = ~/^([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*:\s*([a-zA-Z0-9,<>_:?()\s-]+))?(?:\s*=\s*(.*))?/;
+
+    static var RE_FUNC_BLOCK_START = ~/^(?:(\s*:\s*)([a-zA-Z0-9_]+(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?))?\s*{/;
+
+    static var RE_FUNC_RET_TYPE = ~/^(\s*:\s*)([a-zA-Z0-9_]+(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?)/;
+
+    static var RE_CAST = ~/^cast(?:\s*(\())?/;
+
+    static var RE_NEW = ~/^new\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?\s*\(/;
 
 } //HaxeToHscript

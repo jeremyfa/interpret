@@ -7,7 +7,7 @@ class TImport {
 
     public var path:String;
 
-    public var alias:String = null;
+    @:optional public var alias:String = null;
 
 } //TImport
 
@@ -21,13 +21,22 @@ class TUsing {
 } //TUsing
 
 @:structInit
+class TModifier {
+
+    public var pos:Int;
+
+    public var name:String;
+
+} //TModifier
+
+@:structInit
 class TMeta {
 
     public var pos:Int;
 
     public var name:String;
 
-    public var args:Array<String> = null;
+    @:optional public var args:Array<String> = null;
 
 } //TMeta
 
@@ -45,25 +54,29 @@ class TComment {
 @:structInit
 class TField {
 
+    public var name:String;
+
     public var pos:Int;
 
     public var kind:TFieldKind;
 
-    public var args:Array<TArg> = null;
+    public var type:String;
 
-    public var get:String = null;
+    @:optional public var args:Array<TArg> = null;
 
-    public var set:String = null;
+    @:optional public var get:String = null;
 
-    public var expr:String = null;
+    @:optional public var set:String = null;
+
+    @:optional public var expr:String = null;
 
 } //TField
 
 enum TFieldKind {
 
-    METHOD;
-
     VAR;
+
+    METHOD;
 
 } //TFieldKind
 
@@ -72,10 +85,10 @@ class TArg {
 
     public var pos:Int;
 
-    public var name:String = null;
+    @:optional public var name:String = null;
 
     public var type:String;
 
-    public var expr:String;
+    @:optional public var expr:String;
 
 } //TArg
