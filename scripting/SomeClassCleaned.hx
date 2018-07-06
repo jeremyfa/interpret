@@ -1,9 +1,8 @@
 {
 
-    function new(name:String) {
+    function new(name) {
         
         this.name = name;
-        this.name = "WHAT";
 
         this.someMap = [
             ',)' => [',' => true, ')' => true],

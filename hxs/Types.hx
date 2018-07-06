@@ -89,6 +89,8 @@ class TArg {
 
     public var type:String;
 
+    @:optional public var opt:Bool = false;
+
     @:optional public var expr:String;
 
 } //TArg

@@ -2,7 +2,6 @@ package hxs;
 
 // TODO convert arrow functions () -> { }
 // TODO convert combined switches switch [a, b] { case [_, 'something']: ... }
-// TODO convert explicit cast
 
 import hxs.Types;
 
@@ -325,9 +324,7 @@ class HaxeToHscript {
                     consumeNew(_expr);
                 }
                 else if (word == 'function') {
-                    _expr.add(word);
-                    i += word.length;
-                    // TODO consumeFunction()
+                    consumeFunction(_expr);
                 }
                 else {
                     _expr.add(c);
@@ -491,6 +488,89 @@ class HaxeToHscript {
         i++;
 
     } //consumeNew
+
+    function consumeFunction(?expr:StringBuf) {
+
+        // We assume cleanedAfter is up to date
+
+        inline function add(str:String) {
+            if (expr != null) expr.add(str);
+        }
+
+        if (!RE_FUNCTION.match(cleanedAfter)) {
+            fail('Invalid function', i, haxe);
+        }
+
+        if (expr != null) {
+            expr.add(RE_FUNCTION.matched(0));
+        }
+        i += RE_FUNCTION.matched(0).length;
+        openParens++;
+        
+        // Parse args
+        var defaults:Array<Array<String>> = null;
+        var result;
+        do {
+            result = consumeExpression(',)');
+            if (result.expr != '') {
+                var arg = parseNamedArg(result.expr);
+                if (arg.opt) {
+                    add('?');
+                }
+                add(arg.name);
+                if (arg.expr != null) {
+                    if (defaults == null) defaults = [];
+                    defaults.push([arg.name, arg.expr]);
+                }
+            }
+            add(result.stop);
+            i++;
+        }
+        while (result.stop == ',');
+
+        openParens--;
+
+        // Nothing else special to do if there are no default values
+        if (defaults == null) return;
+
+        // Insert default assigns function
+        inline function addDefaultAssigns() {
+            for (item in defaults) {
+                var name = item[0];
+                var value = item[1];
+                add(' if ($name == null) $name = $value;');
+            }
+        }
+
+        // Parse return type and body
+        updateCleanedAfter();
+        if (RE_FUNC_BLOCK_START.match(cleanedAfter)) {
+
+            i += RE_FUNC_BLOCK_START.matched(0).length;
+
+            // Block with braces
+            openBraces++;
+            add('{');
+            addDefaultAssigns();
+            add(consumeExpression('}').expr);
+            add('}');
+            i++;
+            openBraces--;
+        }
+        else {
+            if (RE_FUNC_RET_TYPE.match(cleanedAfter)) {
+                i += RE_FUNC_RET_TYPE.matched(0).length;
+            }
+
+            // Body without braces
+            add('{');
+            addDefaultAssigns();
+            add(consumeExpression(';').expr.ltrim() + ';');
+            add('}');
+            i++;
+        }
+
+    } //consumeFunction
 
     function consumeMethod() {
 
@@ -767,22 +847,15 @@ class HaxeToHscript {
 
         var arg:TArg = {
             pos: i,
-            name: RE_NAMED_ARG.matched(1),
-            type: RE_NAMED_ARG.matched(2),
-            expr: RE_NAMED_ARG.matched(3)
+            name: RE_NAMED_ARG.matched(2),
+            type: RE_NAMED_ARG.matched(3),
+            expr: RE_NAMED_ARG.matched(4),
+            opt: RE_NAMED_ARG.matched(0) == '?' || (RE_NAMED_ARG.matched(4) != null && RE_NAMED_ARG.matched(4) != '')
         };
 
         return arg;
 
     } //parseArg
-
-    function isArrowFunction():Bool {
-
-        
-
-        return false;
-
-    } //isArrowFunction
 
 /// Helpers
 
@@ -929,9 +1002,11 @@ class HaxeToHscript {
 
     static var RE_METHOD = ~/^function\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?\s*\(/;
 
+    static var RE_FUNCTION = ~/^function(?:\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?)?\s*\(/;
+
     static var RE_STRING = ~/^(?:"(?:[^"\\]*(?:\\.[^"\\]*)*)"|'(?:[^'\\]*(?:\\.[^'\\]*)*)')/;
 
-    static var RE_NAMED_ARG = ~/^([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*:\s*([a-zA-Z0-9,<>_:?()\s-]+))?(?:\s*=\s*(.*))?/;
+    static var RE_NAMED_ARG = ~/^(?:(\?)\s*)?([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*:\s*([a-zA-Z0-9,<>_:?()\s-]+))?(?:\s*=\s*(.*))?/;
 
     static var RE_FUNC_BLOCK_START = ~/^(?:(\s*:\s*)([a-zA-Z0-9_]+(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?))?\s*{/;
 

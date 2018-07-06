@@ -33,7 +33,7 @@ class SomeClass implements hxs.Scriptable {
         var machin7:() -> Void = cast(null, Array<Dynamic>);
         var machin8:Void = new Map<String,Float->Void,(machin:Truc,bidule:Chouette)->Void>(1,2,3);
 
-        var func = (name:String) -> {
+        var func = function(name:String = 'Simon') {
             this.name = name;
         }
 
