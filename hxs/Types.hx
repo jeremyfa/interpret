@@ -1,11 +1,52 @@
 package hxs;
 
+enum Token {
+
+    TPackage(data:TPackage);
+
+    TImport(data:TImport);
+    
+    TUsing(data:TUsing);
+    
+    TModifier(data:TModifier);
+    
+    TMeta(data:TMeta);
+    
+    TComment(data:TComment);
+    
+    TField(data:TField);
+
+    TType(data:TType);
+
+} //Token
+
+enum ModuleItem {
+
+    FieldItem(rawItem:Dynamic);
+
+    ClassItem(rawItem:Dynamic, moduleId:Int, name:String);
+
+    // We may add more cases here later
+
+} //ModuleItem
+
+@:structInit
+class TPackage {
+
+    public var pos:Int;
+
+    public var path:String;
+
+} //TPackage
+
 @:structInit
 class TImport {
 
     public var pos:Int;
 
     public var path:String;
+
+    public var name:String;
 
     @:optional public var alias:String = null;
 
@@ -94,3 +135,20 @@ class TArg {
     @:optional public var expr:String;
 
 } //TArg
+
+@:structInit
+class TType {
+
+    public var pos:Int;
+
+    public var name:String;
+
+    public var kind:TTypeKind;
+
+} //TType
+
+enum TTypeKind {
+
+    CLASS;
+
+} //TTypeKind

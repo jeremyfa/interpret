@@ -5,4 +5,4 @@
 -cp .
 -debug
 -D hxs_scriptable
--D hscriptPos
+-dce no

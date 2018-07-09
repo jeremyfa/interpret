@@ -1,7 +1,15 @@
 package test;
 
 import sys.io.File;
-import hxs.HaxeToHscript;
+import hxs.DynamicClass;
+import hxs.ConvertHaxe;
+import hxs.Env;
+import hxs.DynamicExtension;
+import hxs.DynamicModule;
+
+import haxe.io.Path;
+
+import hxs.ExtensionTest;
 
 class Main {
 
@@ -44,26 +52,61 @@ class Main {
         return;
         //*/
 
+        // Load haxe content
         var content = File.getContent('scripting/SomeClass.hx');
-        var converter = new HaxeToHscript(content);
-        converter.convert();
 
-        trace(@:privateAccess converter.cleanedHaxe);
-        for (item in converter.imports) {
-            Sys.println('TImport '+item);
-        }
-        for (item in converter.usings) {
-            Sys.println('TUsing '+item);
-        }
-        for (item in converter.fields) {
-            Sys.println('TField '+item);
-        }
-        for (item in converter.comments) {
-            Sys.println('TComment '+item);
-        }
-        for (item in converter.modifiers) {
-            Sys.println('TModifier '+item);
-        }
+        // Create env
+        var env = new Env();
+        //env.allowPackage('hxs');
+
+        env.addModule('hxs.ImportTest', DynamicModule.fromStatic(hxs.ImportTest));
+
+        // Expose StringTools static extension
+        env.addExtension('StringTools', DynamicExtension.fromStatic(StringTools));
+
+        // Create dynamic class from env and haxe content
+        var dynClass = new DynamicClass(env, content);
+
+        // Print some static property from this class
+        //trace(dynClass.get('someStaticProperty'));
+
+        // Create instance
+        var dynInstance = dynClass.createInstance();
+
+        // Call instance method
+        //dynInstance.get('someInstanceMethod')('some', 'args');
+
+        //hxs.ImportTest.SomeOtherType.hi();
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        //env.extensions.set('Extensions', DynamicExtension.fromStatic(ceramic.Extensions));
+/*
+        var dynClass = new DynamicClass(env, content);
+
+        trace(dynClass.instanceHscript);
+        //trace(dynClass.classHscript);
+
+        trace('lastName: ' + dynClass.get('lastName'));
+        trace('_defaultName: ' + dynClass.get('defaultNamee'));*/
+
+        /*for (i in 0...10) {
+            trace('dummy2: ' + dynClass.get('dummy2')());
+        }*/
+
+        /*var dynObj = dynClass.createInstance();
+        trace('obj.name = ' + dynObj.get('name'));
+        trace('obj.lastName = ' + dynObj.get('lastName'));*/
 
     } //main
 

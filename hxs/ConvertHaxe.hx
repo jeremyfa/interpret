@@ -2,30 +2,21 @@ package hxs;
 
 // TODO convert arrow functions () -> { }
 // TODO convert combined switches switch [a, b] { case [_, 'something']: ... }
+// TODO convert static variables
+// TODO get/set
+// TODO handle import pack.Type.method;
 
 import hxs.Types;
 
 using StringTools;
 
-class HaxeToHscript {
+class ConvertHaxe {
 
     var haxe(default,null):String;
 
     var cleanedHaxe(default,null):String;
 
-    var hscript(default,null):String;
-
-    public var imports(default,null):Array<TImport>;
-
-    public var usings(default,null):Array<TUsing>;
-
-    public var fields(default,null):Array<TField>;
-
-    public var metas(default,null):Array<TMeta>;
-
-    public var comments(default,null):Array<TComment>;
-
-    public var modifiers(default,null):Array<TModifier>;
+    public var tokens(default,null):Array<Token>;
 
     public function new(haxe:String) {
 
@@ -34,8 +25,6 @@ class HaxeToHscript {
     } //new
 
 /// Convert
-
-    var output:StringBuf = null;
 
     var i = 0;
 
@@ -61,6 +50,8 @@ class HaxeToHscript {
 
     var openBrackets = 0;
 
+    var inClassBraces = -1;
+
     public function convert():Void {
 
         // Generate cleaned haxe code
@@ -68,15 +59,9 @@ class HaxeToHscript {
 
         // Reset data
         //
-        imports = [];
-        usings = [];
-        fields = [];
-        comments = [];
-        metas = [];
-        modifiers = [];
-        hscript = null;
+        tokens = [];
+        inClassBraces = -1;
 
-        output = new StringBuf();
         i = 0;
         len = haxe.length;
         c = '';
@@ -91,7 +76,7 @@ class HaxeToHscript {
         openParens = 0;
         openBrackets = 0;
 
-        // Iterate over each character and generate output
+        // Iterate over each character and generate tokens
         //
         while (i < len) {
             updateCAndCC();
@@ -105,16 +90,27 @@ class HaxeToHscript {
             else if (c == '@') {
                 consumeMeta();
             }
+            else if (c == '{') {
+                openBraces++;
+                i++;
+            }
+            else if (c == '}') {
+                openBraces--;
+                i++;
+                if (inClassBraces != -1 && inClassBraces > openBraces) {
+                    inClassBraces = -1;
+                }
+            }
             else {
                 updateCleanedAfter();
                 updateAfter();
                 updateWord();
                 
                 if (MODIFIERS.exists(word)) {
-                    modifiers.push({
+                    tokens.push(TModifier({
                         pos: i,
                         name: word
-                    });
+                    }));
                     i += word.length;
                 }
                 else if (word == 'import') {
@@ -123,23 +119,31 @@ class HaxeToHscript {
                 else if (word == 'using') {
                     consumeUsing();
                 }
-                else if (word == 'var' || word == 'final') {
-                    consumeVar();
-                    i++;
+                else if (word == 'package') {
+                    consumePackage();
                 }
-                else if (word == 'function') {
-                    consumeMethod();
-                    i++;
+                else if (inClassBraces != -1) {
+                    if (word == 'var' || word == 'final') {
+                        consumeVar();
+                    }
+                    else if (word == 'function') {
+                        consumeMethod();
+                    }
+                    else {
+                        i++;
+                    }
                 }
                 else {
-                    i++;
+                    if (word == 'class') {
+                        consumeClassDecl();
+                    }
+                    else {
+                        i++;
+                    }
                 }
             }
 
         }
-
-        // Use result
-        hscript = output.toString();
 
     } //convert
 
@@ -346,6 +350,26 @@ class HaxeToHscript {
 
     } //consumeExpression
 
+    function consumeClassDecl() {
+
+        // We assume cleanedAfter is up to date
+
+        if (!RE_CLASS_DECL.match(cleanedAfter)) {
+            fail('Invalid class', i, haxe);
+        }
+
+        i += RE_CLASS_DECL.matched(0).length;
+        openBraces++;
+        inClassBraces = openBraces;
+
+        tokens.push(TType({
+            pos: i,
+            kind: CLASS,
+            name: RE_CLASS_DECL.matched(1)
+        }));
+
+    } //consumeClassDecl
+
     function consumeImport() {
 
         // We assume cleanedAfter is up to date
@@ -357,12 +381,15 @@ class HaxeToHscript {
         var path = RE_IMPORT.matched(1);
         var alias = RE_IMPORT.matched(2);
 
+        var parts = path.split('.');
+
         var imp:TImport = {
             pos: i,
             path: path,
+            name: parts[parts.length-1],
             alias: alias != null && alias != '' ? alias : null
         };
-        imports.push(imp);
+        tokens.push(TImport(imp));
 
         i += RE_IMPORT.matched(0).length;
 
@@ -378,11 +405,11 @@ class HaxeToHscript {
 
         var path = RE_USING.matched(1);
 
-        var imp:TUsing = {
+        var use:TUsing = {
             pos: i,
             path: path
         };
-        usings.push(imp);
+        tokens.push(TUsing(use));
 
         i += RE_USING.matched(0).length;
 
@@ -431,7 +458,7 @@ class HaxeToHscript {
             }
             expr.add(';');
         } else {
-            fields.push(field);
+            tokens.push(TField(field));
         }
 
     } //consumeVar
@@ -636,7 +663,7 @@ class HaxeToHscript {
             expr: body
         };
 
-        fields.push(field);
+        tokens.push(TField(field));
 
     } //consumeMethod
 
@@ -667,7 +694,7 @@ class HaxeToHscript {
             // Nothing to add
         } else {
             comment.content = cleanComment(content.toString());
-            comments.push(comment);
+            tokens.push(TComment(comment));
         }
 
     } //consumeSingleLineComment
@@ -699,7 +726,7 @@ class HaxeToHscript {
             // Nothing to add
         } else {
             comment.content = cleanComment(content.toString());
-            comments.push(comment);
+            tokens.push(TComment(comment));
         }
 
     } //consumeMultiLineComment
@@ -832,10 +859,32 @@ class HaxeToHscript {
         if (expr != null) {
             // Nothing to add
         } else {
-            metas.push(meta);
+            tokens.push(TMeta(meta));
         }
 
     } //consumeMeta
+
+    function consumePackage() {
+
+        var pos = i;
+        i += word.length;
+        var pack = '';
+        var c = cleanedHaxe.charAt(i);
+        while (c != ';') {
+            pack += c;
+            i++;
+            c = cleanedHaxe.charAt(i);
+        }
+        i++;
+        
+        if (pack.trim() != '') {
+            tokens.push(TPackage({
+                pos: pos,
+                path: pack.trim()
+            }));
+        }
+
+    } //consumePackage
 
     function parseNamedArg(rawArg:String) {
 
@@ -850,7 +899,7 @@ class HaxeToHscript {
             name: RE_NAMED_ARG.matched(2),
             type: RE_NAMED_ARG.matched(3),
             expr: RE_NAMED_ARG.matched(4),
-            opt: RE_NAMED_ARG.matched(0) == '?' || (RE_NAMED_ARG.matched(4) != null && RE_NAMED_ARG.matched(4) != '')
+            opt: RE_NAMED_ARG.matched(1) == '?' || (RE_NAMED_ARG.matched(4) != null && RE_NAMED_ARG.matched(4) != '')
         };
 
         return arg;
@@ -979,7 +1028,8 @@ class HaxeToHscript {
         'static' => true,
         'public' => true,
         'protected' => true,
-        'dynamic' => true
+        'dynamic' => true,
+        'private' => true
     ];
 
 /// Regular expressions
@@ -1015,5 +1065,7 @@ class HaxeToHscript {
     static var RE_CAST = ~/^cast(?:\s*(\())?/;
 
     static var RE_NEW = ~/^new\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?\s*\(/;
+
+    static var RE_CLASS_DECL = ~/^class\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?([^{]*)\s*{/;
 
 } //HaxeToHscript
