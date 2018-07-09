@@ -2,9 +2,6 @@ package hxs;
 
 class Env {
 
-    /** List of symbols for a given wildcard path. */
-    public var wildcards = new Map<String,Array<String>>();
-
     /** Mapping of modules (similar to static modules, but at runtime) from type paths. */
     public var modules = new Map<String,DynamicModule>();
 
