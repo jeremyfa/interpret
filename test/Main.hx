@@ -1,5 +1,17 @@
 package test;
 
+// TODO handle inheritance to parent native class
+// TODO handle inheritance to parent dynamic class
+// TODO add DynamicEnum support
+
+// TODO convert arrow functions () -> { }
+// TODO convert combined switches switch [a, b] { case [_, 'something']: ... }
+
+// TODO convert haxe code into DynamicModule instead of DynamicClass
+// TODO use DynamicModule instances to get classes and enums, just like in regular Haxe
+//      - add DynamicModule.fromFile('some/haxe/File.hx')
+//      - add DynamicModule.fromString('... some haxe string ...')
+
 import sys.io.File;
 import hxs.DynamicClass;
 import hxs.ConvertHaxe;

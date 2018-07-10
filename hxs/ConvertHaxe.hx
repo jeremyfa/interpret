@@ -1,11 +1,5 @@
 package hxs;
 
-// TODO convert arrow functions () -> { }
-// TODO convert combined switches switch [a, b] { case [_, 'something']: ... }
-// TODO convert static variables
-// TODO get/set
-// TODO handle import pack.Type.method;
-
 import hxs.Types;
 
 using StringTools;
