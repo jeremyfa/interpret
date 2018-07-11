@@ -22,6 +22,8 @@ enum Token {
 
 enum ModuleItem {
 
+    ExtensionItem(item:ModuleItem, ?extendedType:String);
+
     FieldItem(rawItem:Dynamic);
 
     ClassItem(rawItem:Dynamic, moduleId:Int, name:String);

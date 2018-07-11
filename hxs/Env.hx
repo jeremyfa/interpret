@@ -8,17 +8,7 @@ class Env {
     /** Internal of modules */
     var modulesById = new Map<Int,DynamicModule>();
 
-    /** Mapping of extensions (similar to static extensions, but at runtime) from type paths. */
-    public var extensions = new Map<String,DynamicExtension>();
-
-    /** If defined, will limit the top level search to the ones specified in the map. */
-    /*public var allowedPackages:Map<String,Bool> = [
-        'haxe' => true
-    ];*/
-
     public function new() {
-
-        // Add default extensions
 
     } //new
 
@@ -29,20 +19,6 @@ class Env {
         modules.set(typePath, module);
 
     } //addModule
-
-    /** Add dynamic extension */
-    public function addExtension(typePath:String, extension:DynamicExtension):Void {
-
-        extensions.set(typePath, extension);
-
-    } //addExtension
-
-    /** Allow a package */
-    /*public function allowPackage(pack:String):Void {
-
-        allowedPackages.set(pack, true);
-
-    } //allowPackage*/
 
     /** Load script code for the given class.
         This will update the code of any living instance

@@ -16,7 +16,6 @@ import sys.io.File;
 import hxs.DynamicClass;
 import hxs.ConvertHaxe;
 import hxs.Env;
-import hxs.DynamicExtension;
 import hxs.DynamicModule;
 
 import haxe.io.Path;
@@ -72,9 +71,10 @@ class Main {
         //env.allowPackage('hxs');
 
         env.addModule('hxs.ImportTest', DynamicModule.fromStatic(hxs.ImportTest));
+        env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
 
         // Expose StringTools static extension
-        env.addExtension('StringTools', DynamicExtension.fromStatic(StringTools));
+        //env.addExtension('StringTools', DynamicExtension.fromStatic(StringTools));
 
         // Create dynamic class from env and haxe content
         var dynClass = new DynamicClass(env, content);

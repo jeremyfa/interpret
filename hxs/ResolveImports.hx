@@ -20,14 +20,6 @@ class ResolveImports {
 
     public function addImport(data:TImport) {
 
-        // Ensure the requested type path is allowed
-        /*if (env.allowedPackages != null) {
-            var parts = data.path.split('.');
-            if (parts.length > 1 && !env.allowedPackages.exists(parts[0])) {
-                throw 'Package ' + parts[0] + ' is not allowed. Allow it with `env.allowPackage(\'' + parts[0] + '\')`';
-            }
-        }*/
-
         var parts = data.path.split('.');
         var lastPart = parts[parts.length-1];
         var isWildcard = lastPart == '*';
@@ -100,7 +92,7 @@ class ResolveImports {
                 throw 'Invalid module for path: ' + data.path;
             }
             switch (mainItem) {
-                case FieldItem(rawItem):
+                case FieldItem(_) | ExtensionItem(_, _):
                     // Static field import
                     add(parts[parts.length-1], mainItem);
                 case ClassItem(rawItem, _):

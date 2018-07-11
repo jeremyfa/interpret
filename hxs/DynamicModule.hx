@@ -20,7 +20,6 @@ class DynamicModule {
     var id:Int = _nextId++;
 
     public var items(get,null):Map<String,ModuleItem> = null;
-
     function get_items():Map<String,ModuleItem> {
         if (!_adding && lazyLoad != null) {
             if (lazyLoad != null) {
@@ -32,6 +31,7 @@ class DynamicModule {
         return this.items;
     }
 
+    @:noCompletion
     public var lazyLoad:DynamicModule->Void = null;
 
 /// Lifecycle
@@ -40,14 +40,18 @@ class DynamicModule {
 
     } //new
 
-    public function add(name:String, rawItem:Dynamic, isField:Bool) {
+    public function add(name:String, rawItem:Dynamic, isField:Bool, ?extendedType:String) {
 
         _adding = true;
 
         if (items == null) items = new Map();
 
         if (isField) {
-            items.set(name, FieldItem(rawItem));
+            if (extendedType != null) {
+                items.set(name, ExtensionItem(FieldItem(rawItem), extendedType));
+            } else {
+                items.set(name, FieldItem(rawItem));
+            }
         } else {
             items.set(name, ClassItem(rawItem, id, name));
         }
@@ -90,7 +94,45 @@ class DynamicModule {
 
                     // Static fields
                     for (field in t.get().statics.get()) {
-                        toAdd.push([subTypePath + '.' + field.name, true]);
+                        switch (field.kind) {
+                            case FMethod(k):
+                                switch (field.type) {
+                                    case TFun(args, ret):
+                                        if (args.length > 0) {
+                                            var extendedType:String = null;
+                                            switch (args[0].t) {
+                                                case TInst(t, params):
+                                                    extendedType = t.toString();
+                                                case TAbstract(t, params):
+                                                    extendedType = t.toString();
+                                                default:
+                                            }
+                                            toAdd.push([
+                                                subTypePath + '.' + field.name,
+                                                true,
+                                                extendedType
+                                            ]);
+                                        } else {
+                                            toAdd.push([
+                                                subTypePath + '.' + field.name,
+                                                false,
+                                                null
+                                            ]);
+                                        }
+                                    default:
+                                        toAdd.push([
+                                            subTypePath + '.' + field.name,
+                                            true,
+                                            null
+                                        ]);
+                                }
+                            default:
+                                toAdd.push([
+                                    subTypePath + '.' + field.name,
+                                    true,
+                                    null
+                                ]);
+                        }
                     }
 
                 default:
@@ -99,7 +141,7 @@ class DynamicModule {
 
         var addExprs:Array<Expr> = [];
         for (item in toAdd) {
-            var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]});
+            var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]});
             addExprs.push(expr);
         }
 
@@ -108,6 +150,8 @@ class DynamicModule {
             module.lazyLoad = function(mod) $b{addExprs};
             return module;
         }();
+
+        //trace(new haxe.macro.Printer().printExpr(result));
 
         return result;
 

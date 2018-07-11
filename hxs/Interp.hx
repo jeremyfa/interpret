@@ -3,6 +3,10 @@ package hxs;
 import hxs.Types;
 import hscript.Expr;
 
+/** Supercharged interpreter that behave almost like regular haxe.
+    While we try not to waste any resource, it is expected that this interpreter
+    gives priority to consistency with haxe over performance.
+    If you want your code to be fast, your should just compile it with haxe compiler anyway :) */
 @:allow(hxs.DynamicClass)
 @:allow(hxs.DynamicInstance)
 class Interp extends hscript.Interp {
@@ -102,9 +106,30 @@ class Interp extends hscript.Interp {
         // Resolve module item
         var moduleItem = dynamicClass.imports.resolve(id);
         if (moduleItem != null) {
-            return moduleItem;
+            switch (moduleItem) {
+                case ExtensionItem(subItem, _):
+                    // We ensure this won't be considered as an extension item
+                    // but just a regular field
+                    return subItem;
+                default:
+                    return moduleItem;
+            }
         }
-        else if (id.charAt(0).toLowerCase() == id.charAt(0)) {
+        if (env.modules.exists(id)) {
+            var module = env.modules.get(id);
+            moduleItem = module.items.get(id);
+            if (moduleItem != null) {
+                switch (moduleItem) {
+                    case ExtensionItem(subItem, _):
+                        // We ensure this won't be considered as an extension item
+                        // but just a regular field
+                        return subItem;
+                    default:
+                        return moduleItem;
+                }
+            }
+        }
+        if (id.charAt(0).toLowerCase() == id.charAt(0)) {
             // Resolve package part
             return DynamicPackage.get(env, id);
         }
@@ -185,11 +210,21 @@ class Interp extends hscript.Interp {
         else if (Std.is(o, ModuleItem)) {
             var moduleItem:ModuleItem = cast o;
             switch (moduleItem) {
-                case FieldItem(rawItem):
+                case FieldItem(rawItem) | ExtensionItem(FieldItem(rawItem), _):
                     return super.get(rawItem, f);
                 case ClassItem(rawItem, moduleId, name):
                     var module = @:privateAccess env.modulesById.get(moduleId);
-                    return module.items.get(name + '.' + f);
+                    var resolved = module.items.get(name + '.' + f);
+                    switch (resolved) {
+                        case ExtensionItem(subItem, _):
+                            // We ensure this won't be considered as an extension item
+                            // but just a regular field
+                            return subItem;
+                        default:
+                            return resolved;
+                    }
+                default:
+                    return null;
             }
         }
         else if (Std.is(o, DynamicPackage)) {
@@ -210,8 +245,10 @@ class Interp extends hscript.Interp {
     override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic {
         if (Std.is(f, ModuleItem)) {
             switch (f) {
-                case FieldItem(rawItem):
+                case ExtensionItem(FieldItem(rawItem), _):
                     return Reflect.callMethod(null, rawItem, [o].concat(args));
+                case FieldItem(rawItem):
+                    return Reflect.callMethod(o, rawItem, args);
                 default:
                     throw 'Cannot call module item: ' + f;
             }
