@@ -424,6 +424,8 @@ class ConvertHaxe {
         var type = RE_VAR.matched(5);
         var stop = RE_VAR.matched(6);
 
+        if (type != null) type = cleanType(type);
+
         var field:TField = {
             pos: i,
             kind: VAR,
@@ -647,6 +649,8 @@ class ConvertHaxe {
             body = consumeExpression(';').expr.ltrim() + ';';
             i++;
         }
+
+        if (ret != null) ret = cleanType(ret);
 
         var field:TField = {
             pos: pos,
@@ -888,10 +892,13 @@ class ConvertHaxe {
             fail('Invalid argument', i, haxe);
         }
 
+        var type = RE_NAMED_ARG.matched(3);
+        if (type != null) type = cleanType(type);
+
         var arg:TArg = {
             pos: i,
             name: RE_NAMED_ARG.matched(2),
-            type: RE_NAMED_ARG.matched(3),
+            type: type,
             expr: RE_NAMED_ARG.matched(4),
             opt: RE_NAMED_ARG.matched(1) == '?' || (RE_NAMED_ARG.matched(4) != null && RE_NAMED_ARG.matched(4) != '')
         };
@@ -911,6 +918,18 @@ class ConvertHaxe {
         throw '' + error;
 
     } //fail
+
+    static function cleanType(rawType:String):String {
+
+        var cleanedType = RE_ANY_SPACE.replace(rawType, '');
+
+        if (cleanedType.startsWith('Null<')) {
+            cleanedType = cleanedType.substring(5, cleanedType.length-1);
+        }
+
+        return cleanedType;
+
+    } //cleanType
 
     static function cleanComment(comment:String):String {
 
@@ -1061,5 +1080,7 @@ class ConvertHaxe {
     static var RE_NEW = ~/^new\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?\s*\(/;
 
     static var RE_CLASS_DECL = ~/^class\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?([^{]*)\s*{/;
+
+    static var RE_ANY_SPACE = ~/\s+/gm;
 
 } //HaxeToHscript

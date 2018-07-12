@@ -8,6 +8,8 @@ import haxe.macro.Printer;
 
 import hxs.Types;
 
+using StringTools;
+
 /** Like haxe modules, but resolved at runtime. */
 class DynamicModule {
 
@@ -31,6 +33,12 @@ class DynamicModule {
         return this.items;
     }
 
+    public var dynamicClasses(default,null):Map<String,DynamicClass> = null;
+
+    public var imports(default,null):ResolveImports = null;
+
+    public var usings(default,null):ResolveUsings = null;
+
     @:noCompletion
     public var lazyLoad:DynamicModule->Void = null;
 
@@ -41,6 +49,8 @@ class DynamicModule {
     } //new
 
     public function add(name:String, rawItem:Dynamic, isField:Bool, ?extendedType:String) {
+
+        if (Std.is(rawItem, DynamicClass)) trace('add($name, _, $isField, $extendedType)');
 
         _adding = true;
 
@@ -59,6 +69,87 @@ class DynamicModule {
         _adding = false;
 
     } //add
+
+/// From string
+
+    static public function fromString(env:Env, moduleName:String, haxe:String) {
+
+        var converter = new ConvertHaxe(haxe);
+        converter.convert();
+
+        var module = new DynamicModule();
+        module.dynamicClasses = new Map();
+
+        var currentClassPath:String = null;
+        var dynClass:DynamicClass = null;
+        var modifiers = new Map<String,Bool>();
+        var packagePrefix:String = '';
+
+        module.imports = new ResolveImports(env);
+        module.usings = new ResolveUsings(env);
+
+        for (token in converter.tokens) {
+            switch (token) {
+
+                case TPackage(data):
+                    packagePrefix = data.path != null && data.path != '' ? data.path + '.' : '';
+            
+                case TImport(data):
+                    module.imports.addImport(data);
+                
+                case TUsing(data):
+                    module.usings.addUsing(data);
+
+                case TModifier(data):
+                    modifiers.set(data.name, true);
+
+                case TType(data):
+                    if (data.kind == CLASS) {
+                        dynClass = new DynamicClass(env, {
+                            tokens: converter.tokens,
+                            targetClass: data.name
+                        });
+                        module.dynamicClasses.set(data.name, dynClass);
+                        currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
+                        module.add(currentClassPath, dynClass, false, null);
+                    }
+                    else {
+                        currentClassPath = null;
+                        dynClass = null;
+                    }
+                    // Reset modifiers
+                    modifiers = new Map<String,Bool>();
+                
+                case TField(data):
+                    if (currentClassPath != null) {
+                        if (modifiers.exists('static')) {
+                            if (data.kind == VAR) {
+                                module.add(currentClassPath + '.' + data.name, dynClass, true, null);
+                            }
+                            else if (data.kind == METHOD) {
+                                var extendedType = null;
+                                if (data.args.length > 0) {
+                                    var firstArg = data.args[0];
+                                    if (firstArg.type != null) {
+                                        extendedType = firstArg.type;
+                                    }
+                                }
+                                if (extendedType != null) {
+                                    extendedType = TypeUtils.toResolvedType(module.imports, extendedType);
+                                }
+                                module.add(currentClassPath + '.' + data.name, dynClass, true, extendedType);
+                            }
+                        }
+                    }
+                
+                default:
+            
+            }
+        }
+
+        return module;
+
+    } //fromString
 
 /// From static module
 

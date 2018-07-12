@@ -1,8 +1,7 @@
 package test;
 
-import hxs.ImportTest.*;
+import hxs.ImportTest;
 
-import StringTools.urlEncode;
 using StringTools;
 
 /** Some scriptable class */
@@ -10,12 +9,16 @@ class SomeClass implements hxs.Scriptable {
 
     public function new() {
 
-        //hello();
-
-        trace(urlEncode);
-        trace(urlEncode('Jérémy'));
         trace('Jérémy'.urlEncode());
 
     } //new
+
+    public static function hello(test:Class<ImportTest>) {
+        trace('hello');
+    }
+
+    public static function selfHello(value:String) {
+        trace('hello $value');
+    }
 
 } //SomeClass

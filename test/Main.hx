@@ -9,8 +9,8 @@ package test;
 
 // TODO convert haxe code into DynamicModule instead of DynamicClass
 // TODO use DynamicModule instances to get classes and enums, just like in regular Haxe
-//      - add DynamicModule.fromFile('some/haxe/File.hx')
 //      - add DynamicModule.fromString('... some haxe string ...')
+//        -> move imports & usings at module level
 
 import sys.io.File;
 import hxs.DynamicClass;
@@ -71,19 +71,22 @@ class Main {
         //env.allowPackage('hxs');
 
         env.addModule('hxs.ImportTest', DynamicModule.fromStatic(hxs.ImportTest));
+        
         env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
+
+        var dynModule = DynamicModule.fromString(env, 'SomeClass', content);
 
         // Expose StringTools static extension
         //env.addExtension('StringTools', DynamicExtension.fromStatic(StringTools));
 
         // Create dynamic class from env and haxe content
-        var dynClass = new DynamicClass(env, content);
+        //var dynClass = new DynamicClass(env, content);
 
         // Print some static property from this class
         //trace(dynClass.get('someStaticProperty'));
 
         // Create instance
-        var dynInstance = dynClass.createInstance();
+        //var dynInstance = dynClass.createInstance();
 
         // Call instance method
         //dynInstance.get('someInstanceMethod')('some', 'args');

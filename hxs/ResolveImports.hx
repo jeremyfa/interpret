@@ -10,7 +10,7 @@ class ResolveImports {
 
     var env:Env;
 
-    var addedItems:Map<String,ModuleItem> = new Map();
+    var items:Map<String,ModuleItem> = new Map();
 
     public function new(env:Env) {
 
@@ -55,7 +55,7 @@ class ResolveImports {
         }
 
         inline function add(name, item) {
-            if (!addedItems.exists(name)) addedItems.set(name, item);
+            if (!items.exists(name)) items.set(name, item);
         }
 
         if (isWildcard) {
@@ -120,46 +120,9 @@ class ResolveImports {
 
     } //addImport
 
-    public function resolve(name:String):ModuleItem {
+    inline public function resolve(name:String):ModuleItem {
 
-        var item = addedItems.get(name);
-
-        if (item != null) {
-
-            return item;
-
-        }
-
-        return null;
-
-        /*var matched:TImport = null;
-
-        for (data in imports) {
-            if (data.alias != null) {
-                if (typeName == data.alias) {
-                    matched = data;
-                    break;
-                }
-            }
-            else {
-                if (typeName == data.name) {
-                    matched = data;
-                    break;
-                }
-            }
-        }
-
-        if (matched != null) {
-            if (env.types.exists(matched.path)) {
-                return env.types.get(matched.path);
-            }
-            var resolved = Type.resolveClass(matched.path);
-            // TODO if null try enum...
-            return resolved;
-        }
-        else {
-            return null;
-        }*/
+        return items.get(name);
 
     } //resolve
 

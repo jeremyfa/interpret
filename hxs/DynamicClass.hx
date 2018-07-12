@@ -1,5 +1,7 @@
 package hxs;
 
+import hxs.ResolveUsings;
+import hxs.ResolveImports;
 import hxs.Types;
 import hxs.ConvertHaxe;
 import hscript.Expr as HscriptExpr;
@@ -19,8 +21,6 @@ class DynamicClass {
 
     public var instanceHscript(default,null):String;
 
-    public var haxe(default,null):String;
-
     public var env(default,null):Env;
 
     var interp:Interp;
@@ -37,8 +37,6 @@ class DynamicClass {
 
     var instanceSetters:Map<String,Bool>;
 
-    var converter:ConvertHaxe;
-
     var options:DynamicClassOptions;
 
     var instances:Array<DynamicInstance> = [];
@@ -49,9 +47,9 @@ class DynamicClass {
 
     var instanceProperties:Array<String>;
 
-    var imports:ResolveImports;
+    var imports:ResolveImports = null;
 
-    var usings:ResolveUsings;
+    var usings:ResolveUsings = null;
 
     var packagePath:String;
 
@@ -61,14 +59,10 @@ class DynamicClass {
 
 /// Lifecycle
 
-    public function new(env:Env, haxe:String, ?options:DynamicClassOptions) {
+    public function new(env:Env, options:DynamicClassOptions) {
 
         this.env = env;
-        this.haxe = haxe;
-        this.options = options != null ? options : cast {};
-
-        converter = new ConvertHaxe(haxe);
-        converter.convert();
+        this.options = options;
 
         computeHscript();
         initStatics();
@@ -96,6 +90,19 @@ class DynamicClass {
 
     function computeHscript() {
 
+        var tokens:Array<Token> = null;
+        if (options.tokens != null) {
+            tokens = options.tokens;
+        }
+        else if (options.haxe != null) {
+            var converter = new ConvertHaxe(options.haxe);
+            converter.convert();
+            tokens = converter.tokens;
+        }
+        else {
+            throw 'Cannot create dynamic class without haxe code or tokens';
+        }
+
         var instanceResult = new StringBuf();
         var classResult = new StringBuf();
         var targetClass = options.targetClass != null ? options.targetClass : null;
@@ -103,20 +110,34 @@ class DynamicClass {
         var modifiers = new Map<String,Bool>();
         var indent = options.indent != null ? options.indent : '    ';
         var classTokens = [];
+        var importsReady = false;
+        var usingsReady = false;
         classGetters = new Map();
         classSetters = new Map();
         instanceGetters = new Map();
         instanceSetters = new Map();
         classProperties = [];
         instanceProperties = [];
-        imports = new ResolveImports(env);
-        usings = new ResolveUsings(env);
         packagePath = null;
+
+        if (options.imports != null) {
+            importsReady = true;
+            imports = options.imports;
+        } else {
+            imports = new ResolveImports(env);
+        }
+
+        if (options.usings != null) {
+            usingsReady = true;
+            usings = options.usings;
+        } else {
+            usings = new ResolveUsings(env);
+        }
 
         // Extract target class token (their could be other types/classes in the same content)
         // Extract imports (shared by all classes in file)
         // Extract package
-        for (token in converter.tokens) {
+        for (token in tokens) {
             if (!inTargetClass) {
                 switch (token) {
 
@@ -131,10 +152,10 @@ class DynamicClass {
                         if (packagePath == null) packagePath = data.path;
                 
                     case TImport(data):
-                        imports.addImport(data);
+                        if (!importsReady) imports.addImport(data);
                     
                     case TUsing(data):
-                        usings.addUsing(data);
+                        if (!usingsReady) usings.addUsing(data);
 
                     default:
                 }
@@ -336,5 +357,13 @@ typedef DynamicClassOptions = {
     @:optional var targetClass:String;
 
     @:optional var indent:String;
+
+    @:optional var haxe:String;
+
+    @:optional var tokens:Array<Token>;
+
+    @:optional var imports:ResolveImports;
+
+    @:optional var usings:ResolveUsings;
 
 } //DynamicClassOptions

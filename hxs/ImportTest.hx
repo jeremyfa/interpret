@@ -2,6 +2,10 @@ package hxs;
 
 class ImportTest {
 
+    public function new() {
+        
+    }
+
     public static function hello() {
         trace('HELLO FROM ImportTest');
     }

@@ -232,7 +232,7 @@ class Interp extends hscript.Interp {
             return pack.getSub(f);
         }
         else if (existsAsExtension(f)) {
-            var typePath = TypeOf.typeOf(o);
+            var typePath = TypeUtils.typeOf(o);
             var resolved = dynamicClass.usings.resolve(typePath, f);
             if (resolved != null) {
                 return resolved;
