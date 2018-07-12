@@ -147,10 +147,18 @@ class TType {
 
     public var kind:TTypeKind;
 
+    @:optional public var type:String;
+
 } //TType
 
 enum TTypeKind {
 
     CLASS;
+
+    ENUM;
+
+    TYPEDEF;
+
+    ABSTRACT;
 
 } //TTypeKind

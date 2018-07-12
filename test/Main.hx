@@ -7,6 +7,12 @@ package test;
 // TODO convert arrow functions () -> { }
 // TODO convert combined switches switch [a, b] { case [_, 'something']: ... }
 
+// TODO parse dynamic typedefs
+// TODO parse static typedefs
+// TODO parse new & old function types and clean them
+
+// TODO remove type params in cleanType() because they are useless at runtime
+
 // TODO convert haxe code into DynamicModule instead of DynamicClass
 // TODO use DynamicModule instances to get classes and enums, just like in regular Haxe
 //      - add DynamicModule.fromString('... some haxe string ...')

@@ -22,3 +22,20 @@ class SomeClass implements hxs.Scriptable {
     }
 
 } //SomeClass
+
+abstract AbstractFloat(Float) {
+    
+}
+
+abstract AbstractInt((Int,Float)->Void) from Int to Int {
+    
+}
+
+typedef MachinTruc = Bidule;
+typedef MachinTruc<Truc> = Bidule<Chouette>;
+
+typedef SomeTruc = {
+    > Test;
+    var machin:Bidule = '';
+    @:optional var bidule:Machin;
+}

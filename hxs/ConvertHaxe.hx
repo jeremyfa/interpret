@@ -46,6 +46,8 @@ class ConvertHaxe {
 
     var inClassBraces = -1;
 
+    var inEnumBraces = -1;
+
     public function convert():Void {
 
         // Generate cleaned haxe code
@@ -55,6 +57,7 @@ class ConvertHaxe {
         //
         tokens = [];
         inClassBraces = -1;
+        inEnumBraces = -1;
 
         i = 0;
         len = haxe.length;
@@ -94,6 +97,9 @@ class ConvertHaxe {
                 if (inClassBraces != -1 && inClassBraces > openBraces) {
                     inClassBraces = -1;
                 }
+                else if (inEnumBraces != -1 && inEnumBraces > openBraces) {
+                    inEnumBraces = -1;
+                }
             }
             else {
                 updateCleanedAfter();
@@ -127,9 +133,29 @@ class ConvertHaxe {
                         i++;
                     }
                 }
+                else if (inEnumBraces != -1) {
+                    /*if (word == 'var' || word == 'final') {
+                        consumeVar();
+                    }
+                    else if (word == 'function') {
+                        consumeMethod();
+                    }
+                    else {*/
+                        i++;
+                    //}
+                }
                 else {
                     if (word == 'class') {
                         consumeClassDecl();
+                    }
+                    else if (word == 'enum') {
+                        consumeEnumDecl();
+                    }
+                    else if (word == 'abstract') {
+                        consumeAbstract();
+                    }
+                    else if (word == 'typedef') {
+                        consumeTypedef();
                     }
                     else {
                         i++;
@@ -363,6 +389,86 @@ class ConvertHaxe {
         }));
 
     } //consumeClassDecl
+
+    function consumeEnumDecl() {
+
+        // We assume cleanedAfter is up to date
+
+        if (!RE_ENUM_DECL.match(cleanedAfter)) {
+            fail('Invalid enum', i, haxe);
+        }
+
+        i += RE_ENUM_DECL.matched(0).length;
+        openBraces++;
+        inEnumBraces = openBraces;
+
+        tokens.push(TType({
+            pos: i,
+            kind: ENUM,
+            name: RE_ENUM_DECL.matched(2)
+        }));
+
+    } //consumeClassDecl
+
+    function consumeAbstract() {
+
+        // We assume cleanedAfter is up to date
+
+        if (!RE_ABSTRACT_DECL.match(cleanedAfter)) {
+            fail('Invalid abstract', i, haxe);
+        }
+
+        i += RE_ABSTRACT_DECL.matched(0).length;
+        openBraces++;
+
+        var type = RE_ABSTRACT_DECL.matched(2);
+        if (type != null) type = cleanType(type);
+
+        tokens.push(TType({
+            pos: i,
+            kind: ABSTRACT,
+            name: RE_ABSTRACT_DECL.matched(1),
+            type: type
+        }));
+
+        // Consume abstract content (we don't do anything with it)
+        openBraces++;
+        consumeExpression('}');
+        i++;
+        openBraces--;
+
+    } //consumeAbstract
+
+    function consumeTypedef() {
+
+        // We assume cleanedAfter is up to date
+
+        if (!RE_TYPEDEF_DECL.match(cleanedAfter)) {
+            fail('Invalid typedef', i, haxe);
+        }
+
+        i += RE_TYPEDEF_DECL.matched(0).length;
+        openBraces++;
+
+        var type = RE_TYPEDEF_DECL.matched(3) != '' ? RE_TYPEDEF_DECL.matched(3) : null;
+        if (type != null) type = cleanType(type);
+
+        tokens.push(TType({
+            pos: i,
+            kind: TYPEDEF,
+            name: RE_TYPEDEF_DECL.matched(1),
+            type: type
+        }));
+
+        // Consume typedef content (we don't do anything with it)
+        if (RE_TYPEDEF_DECL.matched(2) == '{') {
+            openBraces++;
+            consumeExpression('}');
+            i++;
+            openBraces--;
+        }
+
+    } //consumeTypedef
 
     function consumeImport() {
 
@@ -923,8 +1029,21 @@ class ConvertHaxe {
 
         var cleanedType = RE_ANY_SPACE.replace(rawType, '');
 
+        // TODO handle function type
+
         if (cleanedType.startsWith('Null<')) {
             cleanedType = cleanedType.substring(5, cleanedType.length-1);
+        }
+
+        if (cleanedType.startsWith('Class<')) {
+            var classType = cleanedType.substring(6, cleanedType.length-1);
+            cleanedType = 'Class<' + cleanType(classType) + '>';
+        }
+        else {
+            // Remove type params
+            if (RE_TYPE_WITH_PARAM.match(cleanedType)) {
+                cleanedType = RE_TYPE_WITH_PARAM.matched(1);
+            }
         }
 
         return cleanedType;
@@ -1081,6 +1200,14 @@ class ConvertHaxe {
 
     static var RE_CLASS_DECL = ~/^class\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?([^{]*)\s*{/;
 
+    static var RE_ENUM_DECL = ~/^enum(\s+abstract)?\s+([a-zA-Z_][a-zA-Z_0-9]*)([^{]*)\s*{/;
+
+    static var RE_ABSTRACT_DECL = ~/^abstract\s+([a-zA-Z_][a-zA-Z_0-9]*(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?)\s*(?:\(\s*((?:[a-zA-Z0-9,<>_:?\s-]+|\([a-zA-Z0-9,<>_:?\s-]+\))+)\s*\))([^{]*)\s*{/;
+
+    static var RE_TYPEDEF_DECL = ~/^typedef\s+([a-zA-Z_][a-zA-Z_0-9]*(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?)\s*=\s*({|([^;]*);)/;
+
     static var RE_ANY_SPACE = ~/\s+/gm;
+
+    static var RE_TYPE_WITH_PARAM = ~/^([a-zA-Z_][a-zA-Z_0-9]*)\s*<([a-zA-Z0-9,<>_:?()\s-]+)>/;
 
 } //HaxeToHscript
