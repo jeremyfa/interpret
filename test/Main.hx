@@ -7,8 +7,8 @@ package test;
 // TODO convert arrow functions () -> { }
 // TODO convert combined switches switch [a, b] { case [_, 'something']: ... }
 
-// TODO parse dynamic typedefs
-// TODO parse static typedefs
+// TODO parse dynamic typedefs (alias only)
+// TODO parse static typedefs (alias only)
 // TODO parse new & old function types and clean them
 
 // TODO remove type params in cleanType() because they are useless at runtime
