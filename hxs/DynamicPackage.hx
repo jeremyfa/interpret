@@ -1,8 +1,10 @@
 package hxs;
 
-class DynamicPackage {
+// TODO use per-env dynamic packages
+// TODO only allow dynamic packages on available ones
 
-    public static var packs:Map<String,DynamicPackage> = new Map();
+@:allow(hxs.Env)
+class DynamicPackage {
 
     public var env(default,null):Env;
 
@@ -16,17 +18,6 @@ class DynamicPackage {
         this.path = path;
 
     } //new
-
-    public static function get(env:Env, path:String):DynamicPackage {
-
-        if (!packs.exists(path)) {
-            var pack = new DynamicPackage(env, path);
-            packs.set(path, pack);
-        }
-
-        return packs.get(path);
-
-    } //get
 
     public function getSub(subPath:String):Dynamic {
 
@@ -49,7 +40,7 @@ class DynamicPackage {
         // Resolve sub-package
         // There is no check at this stage to determine whether the package is valid or not.
         // The check is done only when importing {package}.SomeModule, which is fine so far.
-        var resolved = get(env, fullPath);
+        var resolved = env.getPackage(fullPath, false);
         resolvedSubs.set(subPath, resolved);
         return resolved;
 

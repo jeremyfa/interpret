@@ -1,14 +1,17 @@
 package test;
 
+import hxs.Types.ModuleItemKind;
+// TODO add DynamicEnum/Enum support
+
+// TODO parse dynamic typedefs (alias only)
+// TODO parse static typedefs (alias only)
+
 // TODO handle inheritance to parent native class
 // TODO handle inheritance to parent dynamic class
-// TODO add DynamicEnum support
 
 // TODO convert arrow functions () -> { }
 // TODO convert combined switches switch [a, b] { case [_, 'something']: ... }
 
-// TODO parse dynamic typedefs (alias only)
-// TODO parse static typedefs (alias only)
 // TODO parse new & old function types and clean them
 
 // TODO remove type params in cleanType() because they are useless at runtime
@@ -27,6 +30,8 @@ import hxs.DynamicModule;
 import haxe.io.Path;
 
 import hxs.ExtensionTest;
+
+import hxs.Types;
 
 class Main {
 
@@ -77,10 +82,15 @@ class Main {
         //env.allowPackage('hxs');
 
         env.addModule('hxs.ImportTest', DynamicModule.fromStatic(hxs.ImportTest));
+        env.addModule('hxs.Types', DynamicModule.fromStatic(hxs.Types));
         
         env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
 
         var dynModule = DynamicModule.fromString(env, 'SomeClass', content);
+
+        var dynClass = dynModule.dynamicClasses.get('SomeClass');
+         
+        //var dynClass = dynModule.
 
         // Expose StringTools static extension
         //env.addExtension('StringTools', DynamicExtension.fromStatic(StringTools));
@@ -92,24 +102,14 @@ class Main {
         //trace(dynClass.get('someStaticProperty'));
 
         // Create instance
-        //var dynInstance = dynClass.createInstance();
+        var dynInstance = dynClass.createInstance();
 
         // Call instance method
         //dynInstance.get('someInstanceMethod')('some', 'args');
 
         //hxs.ImportTest.SomeOtherType.hi();
-        
 
-
-
-
-
-
-
-
-
-
-
+        dynInstance.call('hello', ['Jon Snow']);
 
         //env.extensions.set('Extensions', DynamicExtension.fromStatic(ceramic.Extensions));
 /*

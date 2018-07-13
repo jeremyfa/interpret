@@ -10,7 +10,7 @@ class ResolveImports {
 
     var env:Env;
 
-    var items:Map<String,ModuleItem> = new Map();
+    var items:Map<String,RuntimeItem> = new Map();
 
     public function new(env:Env) {
 
@@ -77,7 +77,7 @@ class ResolveImports {
                 // Wildcard import of modules inside a package
                 for (moduleKey in wildcardModules) {
                     var module = env.modules.get(moduleKey);
-                    var mainItem:ModuleItem = module.items.get(moduleKey);
+                    var mainItem:RuntimeItem = module.items.get(moduleKey);
                     if (mainItem != null) {
                         add(moduleKey.substr(moduleKey.lastIndexOf('.')+1), mainItem);
                     }
@@ -87,32 +87,59 @@ class ResolveImports {
             // Regular import
             var module = env.modules.get(modulePath);
             var prefix = data.path + '.';
-            var mainItem:ModuleItem = module.items.get(data.path);
+            var mainItem:RuntimeItem = module.items.get(data.path);
+            var loadSubItems = false;
             if (mainItem == null) {
-                throw 'Invalid module for path: ' + data.path;
+                loadSubItems = true;
             }
-            switch (mainItem) {
-                case FieldItem(_) | ExtensionItem(_, _):
-                    // Static field import
-                    add(parts[parts.length-1], mainItem);
-                case ClassItem(rawItem, _):
-                    // Class import
-                    add(parts[parts.length-1], mainItem);
-                    for (itemPath in module.items.keys()) {
-                        var item:ModuleItem = module.items.get(itemPath);
-                        switch (item) {
-                            case ClassItem(rawItem, _):
-                                var itemParts = itemPath.split('.');
-                                if (itemPath == data.path) {
+            else {
+                switch (mainItem) {
+                    case ClassFieldItem(_) | ExtensionItem(_, _) | EnumFieldItem(_, _, _):
+                        // Class/Enum field import
+                        add(parts[parts.length-1], mainItem);
+                    case ClassItem(_, _) | EnumItem(_, _, _):
+                        // Class/Enum import
+                        add(parts[parts.length-1], mainItem);
+                        loadSubItems = true;
+                    default:
+                        throw 'Invalid module for path: ' + data.path;
+                }
+            }
+            // Sub items
+            if (loadSubItems) {
+                for (itemPath in module.items.keys()) {
+                    var item:RuntimeItem = module.items.get(itemPath);
+                    switch (item) {
+                        case ClassItem(_, _):
+                            var itemParts = itemPath.split('.');
+                            if (itemPath == data.path) {
+                                add(itemParts[itemParts.length-1], item);
+                            } else if (itemPath.startsWith(prefix)) {
+                                if (itemParts.length == parts.length + 1) {
                                     add(itemParts[itemParts.length-1], item);
-                                } else if (itemPath.startsWith(prefix)) {
-                                    if (itemParts.length == parts.length + 1) {
-                                        add(itemParts[itemParts.length-1], item);
-                                    }
                                 }
-                            default:
-                        }
+                            }
+                        case EnumItem(_, _, _):
+                            var itemParts = itemPath.split('.');
+                            if (itemPath == data.path) {
+                                add(itemParts[itemParts.length-1], item);
+                            } else if (itemPath.startsWith(prefix)) {
+                                if (itemParts.length == parts.length + 1) {
+                                    add(itemParts[itemParts.length-1], item);
+                                }
+                            }
+                        case EnumFieldItem(_, _, _):
+                            var itemParts = itemPath.split('.');
+                            if (itemPath == data.path) {
+                                add(itemParts[itemParts.length-1], item);
+                            } else if (itemPath.startsWith(prefix)) {
+                                if (itemParts.length == parts.length + 1 || (mainItem == null && itemParts.length == parts.length + 2)) {
+                                    add(itemParts[itemParts.length-1], item);
+                                }
+                            }
+                        default:
                     }
+                }
             }
         }
 
@@ -120,7 +147,7 @@ class ResolveImports {
 
     } //addImport
 
-    inline public function resolve(name:String):ModuleItem {
+    inline public function resolve(name:String):RuntimeItem {
 
         return items.get(name);
 

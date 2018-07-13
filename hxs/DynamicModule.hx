@@ -21,8 +21,8 @@ class DynamicModule {
 
     var id:Int = _nextId++;
 
-    public var items(get,null):Map<String,ModuleItem> = null;
-    function get_items():Map<String,ModuleItem> {
+    public var items(get,null):Map<String,RuntimeItem> = null;
+    function get_items():Map<String,RuntimeItem> {
         if (!_adding && lazyLoad != null) {
             if (lazyLoad != null) {
                 var cb = lazyLoad;
@@ -39,6 +39,10 @@ class DynamicModule {
 
     public var usings(default,null):ResolveUsings = null;
 
+    public var pack:String = null;
+
+    public var aliases(default,null):Map<String,String> = new Map();
+
     @:noCompletion
     public var lazyLoad:DynamicModule->Void = null;
 
@@ -48,27 +52,39 @@ class DynamicModule {
 
     } //new
 
-    public function add(name:String, rawItem:Dynamic, isField:Bool, ?extendedType:String) {
-
-        if (Std.is(rawItem, DynamicClass)) trace('add($name, _, $isField, $extendedType)');
+    public function add(name:String, rawItem:Dynamic, kind:Int, ?extra:Dynamic) {
 
         _adding = true;
 
         if (items == null) items = new Map();
 
-        if (isField) {
-            if (extendedType != null) {
-                items.set(name, ExtensionItem(FieldItem(rawItem), extendedType));
-            } else {
-                items.set(name, FieldItem(rawItem));
-            }
-        } else {
-            items.set(name, ClassItem(rawItem, id, name));
+        switch (kind) {
+            case ModuleItemKind.CLASS:
+                items.set(name, ClassItem(rawItem, id, name));
+            case ModuleItemKind.CLASS_FIELD:
+                var extendedType:String = extra;
+                if (extendedType != null) {
+                    items.set(name, ExtensionItem(ClassFieldItem(rawItem), extendedType));
+                } else {
+                    items.set(name, ClassFieldItem(rawItem));
+                }
+            case ModuleItemKind.ENUM:
+                items.set(name, EnumItem(rawItem, id, name));
+            case ModuleItemKind.ENUM_FIELD:
+                var numArgs:Int = extra;
+                items.set(name, EnumFieldItem(rawItem, name, numArgs));
+            default:
         }
 
         _adding = false;
 
     } //add
+
+    public function alias(alias:String, name:String) {
+
+        aliases.set(alias, name);
+
+    } //alias
 
 /// From string
 
@@ -92,6 +108,7 @@ class DynamicModule {
             switch (token) {
 
                 case TPackage(data):
+                    module.pack = data.path;
                     packagePrefix = data.path != null && data.path != '' ? data.path + '.' : '';
             
                 case TImport(data):
@@ -111,7 +128,7 @@ class DynamicModule {
                         });
                         module.dynamicClasses.set(data.name, dynClass);
                         currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
-                        module.add(currentClassPath, dynClass, false, null);
+                        module.add(currentClassPath, dynClass, ModuleItemKind.CLASS, null);
                     }
                     else {
                         currentClassPath = null;
@@ -124,7 +141,7 @@ class DynamicModule {
                     if (currentClassPath != null) {
                         if (modifiers.exists('static')) {
                             if (data.kind == VAR) {
-                                module.add(currentClassPath + '.' + data.name, dynClass, true, null);
+                                module.add(currentClassPath + '.' + data.name, dynClass, ModuleItemKind.CLASS, null);
                             }
                             else if (data.kind == METHOD) {
                                 var extendedType = null;
@@ -137,7 +154,7 @@ class DynamicModule {
                                 if (extendedType != null) {
                                     extendedType = TypeUtils.toResolvedType(module.imports, extendedType);
                                 }
-                                module.add(currentClassPath + '.' + data.name, dynClass, true, extendedType);
+                                module.add(currentClassPath + '.' + data.name, dynClass, ModuleItemKind.CLASS_FIELD, extendedType);
                             }
                         }
                     }
@@ -164,13 +181,20 @@ class DynamicModule {
         while (parts.length > 1) {
             pack.push(parts.shift());
         }
+        var packString = pack.join('.');
         var name = parts[0];
         var complexType = TPath({pack: pack, name: name});
-        var type = Context.resolveType(complexType, pos);
+        var type = null;
+        try {
+            Context.resolveType(complexType, pos);
+        } catch (e:Dynamic) {
+            // Module X does not define type X, which is fine
+        }
 
         var module = Context.getModule(typePath);
 
         var toAdd:Array<Array<Dynamic>> = [];
+        var toAlias:Array<Array<String>> = [];
         
         for (item in module) {
             switch (item) {
@@ -180,8 +204,9 @@ class DynamicModule {
                     var subTypePath = rawTypePath;
                     if (rawTypePath != typePath) {
                         subTypePath = typePath + rawTypePath.substring(rawTypePath.lastIndexOf('.'));
+                        toAlias.push([rawTypePath, subTypePath]);
                     }
-                    toAdd.push([subTypePath, false]);
+                    toAdd.push([subTypePath, ModuleItemKind.CLASS]);
 
                     // Static fields
                     for (field in t.get().statics.get()) {
@@ -200,29 +225,66 @@ class DynamicModule {
                                             }
                                             toAdd.push([
                                                 subTypePath + '.' + field.name,
-                                                true,
+                                                ModuleItemKind.CLASS_FIELD,
                                                 extendedType
                                             ]);
                                         } else {
                                             toAdd.push([
                                                 subTypePath + '.' + field.name,
-                                                false,
+                                                ModuleItemKind.CLASS,
                                                 null
                                             ]);
                                         }
                                     default:
                                         toAdd.push([
                                             subTypePath + '.' + field.name,
-                                            true,
+                                            ModuleItemKind.CLASS_FIELD,
                                             null
                                         ]);
                                 }
                             default:
                                 toAdd.push([
                                     subTypePath + '.' + field.name,
-                                    true,
+                                    ModuleItemKind.CLASS_FIELD,
                                     null
                                 ]);
+                        }
+                    }
+                
+                case TEnum(t, params):
+                    // Type
+                    var rawTypePath = t.toString();
+                    var subTypePath = rawTypePath;
+                    if (rawTypePath != typePath) {
+                        subTypePath = typePath + rawTypePath.substring(rawTypePath.lastIndexOf('.'));
+                        toAlias.push([rawTypePath, subTypePath]);
+                    }
+
+                    toAdd.push([
+                        subTypePath,
+                        ModuleItemKind.ENUM,
+                        null
+                    ]);
+
+                    for (item in t.get().constructs) {
+                        switch (item.type) {
+                            case TEnum(t, params):
+                                toAdd.push([
+                                    subTypePath + '.' + item.name,
+                                    ModuleItemKind.ENUM_FIELD,
+                                    -1
+                                ]);
+                            case TFun(args, ret):
+                                /*var argNames = [];
+                                for (arg in args) {
+                                    argNames.push(arg.name);
+                                }*/
+                                toAdd.push([
+                                    subTypePath + '.' + item.name,
+                                    ModuleItemKind.ENUM_FIELD,
+                                    args.length
+                                ]);
+                            default:
                         }
                     }
 
@@ -235,9 +297,16 @@ class DynamicModule {
             var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]});
             addExprs.push(expr);
         }
+        var aliasExprs:Array<Expr> = [];
+        for (item in toAlias) {
+            var expr = macro module.alias($v{item[0]}, $v{item[1]});
+            aliasExprs.push(expr);
+        }
 
         var result = macro function() {
             var module = new hxs.DynamicModule();
+            module.pack = $v{packString};
+            $b{aliasExprs};
             module.lazyLoad = function(mod) $b{addExprs};
             return module;
         }();

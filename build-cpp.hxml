@@ -1,0 +1,7 @@
+-lib hscript
+-main test.Main
+-cp .
+-debug
+-D hxs_scriptable
+-dce no
+-cpp bin

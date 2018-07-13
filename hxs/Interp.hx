@@ -110,7 +110,16 @@ class Interp extends hscript.Interp {
                 case ExtensionItem(subItem, _):
                     // We ensure this won't be considered as an extension item
                     // but just a regular field
-                    return subItem;
+                    switch (subItem) {
+                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
+                            // Unwrap
+                            return rawItem;
+                        default:
+                            return moduleItem;
+                    }
+                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
+                    // Unwrap
+                    return rawItem;
                 default:
                     return moduleItem;
             }
@@ -129,9 +138,10 @@ class Interp extends hscript.Interp {
                 }
             }
         }
-        if (id.charAt(0).toLowerCase() == id.charAt(0)) {
-            // Resolve package part
-            return DynamicPackage.get(env, id);
+        // Resolve package part
+        var pack = env.getPackage(id);
+        if (pack != null) {
+            return PackageItem(pack);
         }
         return null;
 
@@ -140,6 +150,7 @@ class Interp extends hscript.Interp {
 	override function assign(e1:Expr, e2:Expr):Dynamic {
 
 		var v = expr(e2);
+        
 		switch( edef(e1) ) {
 		case EIdent(id):
 			var l = locals.get(id);
@@ -207,10 +218,10 @@ class Interp extends hscript.Interp {
             }
             return null;
         }
-        else if (Std.is(o, ModuleItem)) {
-            var moduleItem:ModuleItem = cast o;
+        else if (Std.is(o, RuntimeItem)) {
+            var moduleItem:RuntimeItem = cast o;
             switch (moduleItem) {
-                case FieldItem(rawItem) | ExtensionItem(FieldItem(rawItem), _):
+                case ClassFieldItem(rawItem) | ExtensionItem(ClassFieldItem(rawItem), _):
                     return super.get(rawItem, f);
                 case ClassItem(rawItem, moduleId, name):
                     var module = @:privateAccess env.modulesById.get(moduleId);
@@ -219,17 +230,34 @@ class Interp extends hscript.Interp {
                         case ExtensionItem(subItem, _):
                             // We ensure this won't be considered as an extension item
                             // but just a regular field
-                            return subItem;
+                            switch (subItem) {
+                                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
+                                    // Unwrap
+                                    return rawItem;
+                                default:
+                                    return moduleItem;
+                            }
+                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
+                            // Unwrap
+                            return rawItem;
                         default:
                             return resolved;
                     }
+                case EnumItem(rawItem, moduleId, name):
+                    var module = @:privateAccess env.modulesById.get(moduleId);
+                    var resolved = module.items.get(name + '.' + f);
+                    switch (resolved) {
+                        case EnumFieldItem(rawItem, name, numArgs):
+                            // Raw enum field
+                            return rawItem;
+                        default:
+                            return resolved;
+                    }
+                case PackageItem(pack):
+                    return pack.getSub(f);
                 default:
                     return null;
             }
-        }
-        else if (Std.is(o, DynamicPackage)) {
-            var pack:DynamicPackage = cast o;
-            return pack.getSub(f);
         }
         else if (existsAsExtension(f)) {
             var typePath = TypeUtils.typeOf(o);
@@ -243,11 +271,13 @@ class Interp extends hscript.Interp {
     } //get
 
     override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic {
-        if (Std.is(f, ModuleItem)) {
+        if (Std.is(f, RuntimeItem)) {
             switch (f) {
-                case ExtensionItem(FieldItem(rawItem), _):
+                case ExtensionItem(ClassFieldItem(rawItem), _):
                     return Reflect.callMethod(null, rawItem, [o].concat(args));
-                case FieldItem(rawItem):
+                case ClassFieldItem(rawItem):
+                    return Reflect.callMethod(o, rawItem, args);
+                case EnumFieldItem(rawItem, _, _):
                     return Reflect.callMethod(o, rawItem, args);
                 default:
                     throw 'Cannot call module item: ' + f;

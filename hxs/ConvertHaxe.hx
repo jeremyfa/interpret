@@ -1039,6 +1039,10 @@ class ConvertHaxe {
             var classType = cleanedType.substring(6, cleanedType.length-1);
             cleanedType = 'Class<' + cleanType(classType) + '>';
         }
+        else if (cleanedType.startsWith('Enum<')) {
+            var classType = cleanedType.substring(5, cleanedType.length-1);
+            cleanedType = 'Enum<' + cleanType(classType) + '>';
+        }
         else {
             // Remove type params
             if (RE_TYPE_WITH_PARAM.match(cleanedType)) {

@@ -1,5 +1,7 @@
 package hxs;
 
+import hxs.Types;
+
 using StringTools;
 
 class TypeUtils {
@@ -14,8 +16,42 @@ class TypeUtils {
         if (Std.is(obj, Array)) return 'Array';
         if (Std.is(obj, Map)) return 'Map';
 
+        if (Std.is(obj, RuntimeItem)) {
+            var item:RuntimeItem = cast obj;
+            switch (item) {
+                case ExtensionItem(item, extendedType):
+                    return typeOf(item);
+                case ClassFieldItem(rawItem):
+                    return typeOf(rawItem);
+                case ClassItem(rawItem, moduleId, name):
+                    return 'Class<' + name + '>';
+                case EnumItem(rawItem, moduleId, name):
+                    return 'Enum<' + name + '>';
+                case EnumFieldItem(rawItem, name, numArgs):
+                    return name.substring(0, name.lastIndexOf('.'));
+                case PackageItem(pack):
+                    return 'Dynamic';
+                default:
+            }
+        }
+
         if (Std.is(obj, Class)) {
-            return 'Class<'+Type.getClassName(obj)+'>';
+            var classType = Type.getClassName(obj);
+            if (classType == null) classType = 'Dynamic';
+            return 'Class<'+classType+'>';
+        }
+
+        if (Std.is(obj, Enum)) {
+            var enumType = Type.getEnumName(obj);
+            if (enumType == null) enumType = 'Dynamic';
+            return 'Enum<'+enumType+'>';
+        }
+
+        if (Reflect.isEnumValue(obj)) {
+            var enu = Type.getEnum(obj);
+            if (enu != null) {
+                return Type.getEnumName(enu);
+            }
         }
 
         var clazz = Type.getClass(obj);

@@ -10,7 +10,7 @@ class ResolveUsings {
 
     var env:Env;
 
-    var addedItems:Map<String,Map<String,ModuleItem>> = new Map();
+    var addedItems:Map<String,Map<String,RuntimeItem>> = new Map();
 
     public function new(env:Env) {
 
@@ -48,9 +48,9 @@ class ResolveUsings {
 
         var prefix = data.path + '.';
         for (itemPath in resolvedModule.items.keys()) {
-            var item:ModuleItem = resolvedModule.items.get(itemPath);
+            var item:RuntimeItem = resolvedModule.items.get(itemPath);
             switch (item) {
-                case ExtensionItem(FieldItem(rawItem), extendedType):
+                case ExtensionItem(ClassFieldItem(rawItem), extendedType):
                     if (itemPath.startsWith(prefix)) {
                         var itemParts = itemPath.split('.');
                         if (itemParts.length == parts.length + 1) {
@@ -71,12 +71,18 @@ class ResolveUsings {
 
     } //hasName
 
-    public function resolve(extendedType:String, name:String):ModuleItem {
+    public function resolve(extendedType:String, name:String):RuntimeItem {
 
         var extendedTypesForName = addedItems.get(name);
 
-        if (extendedTypesForName != null && extendedTypesForName.exists(extendedType)) {
-            return extendedTypesForName.get(extendedType);
+        if (extendedTypesForName != null) {
+            if (extendedTypesForName.exists(extendedType)) {
+                return extendedTypesForName.get(extendedType);
+            }
+            var alias = env.aliases.get(extendedType);
+            if (alias != null && extendedTypesForName.exists(alias)) {
+                return extendedTypesForName.get(alias);
+            }
         }
 
         return null;

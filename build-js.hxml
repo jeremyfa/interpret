@@ -1,8 +1,8 @@
 -lib hscript
--lib hxnodejs
--js main.js
 -main test.Main
 -cp .
 -debug
 -D hxs_scriptable
 -dce no
+-lib hxnodejs
+-js main.js

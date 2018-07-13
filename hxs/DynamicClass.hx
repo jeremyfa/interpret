@@ -82,9 +82,45 @@ class DynamicClass {
 
     public function get(name:String):Dynamic {
 
-        return interp.resolve(name);
+        return unwrap(interp.resolve(name));
 
     } //get
+
+    public function call(name:String, args:Array<Dynamic>):Dynamic {
+
+        var method = interp.resolve(name);
+        if (method == null) {
+            throw 'Method not found: $name';
+        }
+        return unwrap(Reflect.callMethod(null, method, args));
+
+    } //call
+
+    public static function unwrap(value:Dynamic):Dynamic {
+
+        if (value == null) return null;
+
+        if (Std.is(value, RuntimeItem)) {
+            var item:RuntimeItem = cast value;
+            switch (item) {
+                case ExtensionItem(item, extendedType):
+                    return unwrap(item);
+                case ClassFieldItem(rawItem):
+                    return rawItem;
+                case ClassItem(rawItem, _, _):
+                    return rawItem;
+                case EnumItem(rawItem, _, _):
+                    return rawItem;
+                case EnumFieldItem(rawItem, _, _):
+                    return rawItem;
+                case PackageItem(pack):
+                    return null;
+            }
+        }
+
+        return value;
+
+    } //unwrap
 
 /// Internal
 

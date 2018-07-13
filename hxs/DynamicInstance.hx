@@ -58,8 +58,18 @@ class DynamicInstance {
 
     public function get(name:String):Dynamic {
 
-        return interp.resolve(name);
+        return DynamicClass.unwrap(interp.resolve(name));
 
     } //get
+
+    public function call(name:String, args:Array<Dynamic>):Dynamic {
+
+        var method = interp.resolve(name);
+        if (method == null) {
+            throw 'Method not found: $name';
+        }
+        return DynamicClass.unwrap(Reflect.callMethod(null, method, args));
+
+    } //call
 
 } //DynamicInstance

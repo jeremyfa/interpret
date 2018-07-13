@@ -20,17 +20,21 @@ enum Token {
 
 } //Token
 
-enum ModuleItem {
+enum RuntimeItem {
 
-    ExtensionItem(item:ModuleItem, ?extendedType:String);
+    ExtensionItem(item:RuntimeItem, ?extendedType:String);
 
-    FieldItem(rawItem:Dynamic);
+    ClassFieldItem(rawItem:Dynamic);
 
     ClassItem(rawItem:Dynamic, moduleId:Int, name:String);
 
-    // We may add more cases here later
+    EnumItem(rawItem:Dynamic, moduleId:Int, name:String);
 
-} //ModuleItem
+    EnumFieldItem(rawItem:Dynamic, name:String, numArgs:Int);
+
+    PackageItem(pack:DynamicPackage);
+
+} //RuntimeItem
 
 @:structInit
 class TPackage {
@@ -161,4 +165,18 @@ enum TTypeKind {
 
     ABSTRACT;
 
+    YOUPI(bref:String);
+
 } //TTypeKind
+
+class ModuleItemKind {
+
+    public inline static var CLASS = 0;
+
+    public inline static var CLASS_FIELD = 1;
+
+    public inline static var ENUM = 2;
+
+    public inline static var ENUM_FIELD = 3;
+
+} //ModuleItemKind

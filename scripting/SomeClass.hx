@@ -1,20 +1,32 @@
 package test;
 
 import hxs.ImportTest;
+import hxs.Types;
+//import hxs.*;
 
 using StringTools;
 
 /** Some scriptable class */
 class SomeClass implements hxs.Scriptable {
 
+    var myName = 'Jean Dupont';
+
     public function new() {
 
         trace('Jérémy'.urlEncode());
 
+        //var truc = CLASS;
+        //var bidule = YOUPI('plop');
+        var chouette = YOUPI('plop');
+        trace(chouette);
+
+        trace(ImportTest);
+        ImportTest.hello();
+
     } //new
 
-    public static function hello(test:Class<ImportTest>) {
-        trace('hello');
+    public function hello(name:String) {
+        trace('hello $name, not $myName');
     }
 
     public static function selfHello(value:String) {
@@ -23,7 +35,7 @@ class SomeClass implements hxs.Scriptable {
 
 } //SomeClass
 
-abstract AbstractFloat(Float) {
+/*abstract AbstractFloat(Float) {
     
 }
 
@@ -38,4 +50,4 @@ typedef SomeTruc = {
     > Test;
     var machin:Bidule = '';
     @:optional var bidule:Machin;
-}
+}*/
