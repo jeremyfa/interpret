@@ -1,4 +1,4 @@
-package hxs;
+package interpret;
 
 #if macro
 import haxe.macro.Expr;
@@ -6,7 +6,7 @@ import haxe.macro.Context;
 import haxe.macro.Printer;
 #end
 
-import hxs.Types;
+import interpret.Types;
 
 using StringTools;
 
@@ -364,7 +364,7 @@ class DynamicModule {
         }
 
         var result = macro function() {
-            var module = new hxs.DynamicModule();
+            var module = new interpret.DynamicModule();
             module.pack = $v{packString};
             $b{aliasExprs};
             $b{superClassExprs};

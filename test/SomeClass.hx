@@ -1,6 +1,6 @@
 package test;
 
-class SomeClass implements hxs.Scriptable {
+class SomeClass implements interpret.Interpretable {
 
     public var name:String = null;
 

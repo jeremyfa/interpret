@@ -1,14 +1,14 @@
 package test;
 
-import hxs.ImportTest;
-import hxs.Types;
-import hxs.Scriptable;
-//import hxs.*;
+import interpret.ImportTest;
+import interpret.Types;
+import interpret.Interpretable;
+//import interpret.*;
 
 using StringTools;
 
-/** Some scriptable class */
-class SomeClass implements Scriptable extends hxs.ParentClass {
+/** Some interpretable class */
+class SomeClass implements Interpretable extends interpret.ParentClass {
 
     var myName = 'Jean Dupont';
 
@@ -25,11 +25,11 @@ class SomeClass implements Scriptable extends hxs.ParentClass {
         var chouette = YOUPI('plop');
         trace(chouette);
 
-        trace(hxs.Scriptable);
-        trace(hxs.TypeUtils.typeOf(hxs.ParentClass));
+        trace(interpret.Interpretable);
+        trace(interpret.TypeUtils.typeOf(interpret.ParentClass));
         trace('IS TTypeKind: ' + Std.is(chouette, TTypeKind));
-        trace('IS Scriptable: ' + Std.is(this, hxs.Scriptable));
-        trace('IS ParentClass: ' + Std.is(this, hxs.ParentClass));
+        trace('IS Interpretable: ' + Std.is(this, interpret.Interpretable));
+        trace('IS ParentClass: ' + Std.is(this, interpret.ParentClass));
 
         someParentStuff();
 

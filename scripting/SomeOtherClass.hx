@@ -1,10 +1,10 @@
 package test;
 
 /** Some scriptable class */
-class SomeOtherClass implements hxs.Scriptable {
+class SomeOtherClass implements interpret.Interpretable {
 
     public function reload():Void {
-        
+
         trace('RELOAD');
 
     }

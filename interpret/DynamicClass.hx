@@ -1,9 +1,9 @@
-package hxs;
+package interpret;
 
-import hxs.ResolveUsings;
-import hxs.ResolveImports;
-import hxs.Types;
-import hxs.ConvertHaxe;
+import interpret.ResolveUsings;
+import interpret.ResolveImports;
+import interpret.Types;
+import interpret.ConvertHaxe;
 import hscript.Expr as HscriptExpr;
 import hscript.Parser as HscriptParser;
 
@@ -11,9 +11,9 @@ import hscript.Parser as HscriptParser;
     Tries to stay as close as possible to haxe syntax.
     Works by converting the provided haxe source code into hscript code,
     then executes it with an extended hscript interpreter. */
-@:allow(hxs.DynamicInstance)
-@:allow(hxs.Interp)
-@:allow(hxs.TypeUtils)
+@:allow(interpret.DynamicInstance)
+@:allow(interpret.Interpreter)
+@:allow(interpret.TypeUtils)
 class DynamicClass {
 
 /// Properties
@@ -24,7 +24,7 @@ class DynamicClass {
 
     public var env(default,null):Env;
 
-    var interp:Interp;
+    var interpreter:Interpreter;
 
     var classProgram:HscriptExpr;
 
@@ -83,13 +83,13 @@ class DynamicClass {
 
     public function get(name:String):Dynamic {
 
-        return TypeUtils.unwrap(interp.resolve(name));
+        return TypeUtils.unwrap(interpreter.resolve(name));
 
     } //get
 
     public function call(name:String, args:Array<Dynamic>):Dynamic {
 
-        var method = interp.resolve(name);
+        var method = interpreter.resolve(name);
         if (method == null) {
             throw 'Method not found: $name';
         }
@@ -338,26 +338,26 @@ class DynamicClass {
     function initStatics() {
 
         // Create class interpreter
-        interp = new Interp(this, className);
+        interpreter = new Interpreter(this, className);
 
         // Feed the interpreter with our program
-        interp.execute(classProgram);
+        interpreter.execute(classProgram);
 
         // Set all properties to null
         // Will ensure their key exists in variables map
         for (prop in classProperties) {
-            interp.variables.set(prop, null);
+            interpreter.variables.set(prop, null);
         }
 
         // Assign getters
-        interp.getters = classGetters;
+        interpreter.getters = classGetters;
 
         // Generate instance variables
-        var __defaults = interp.variables.get('__defaults');
+        var __defaults = interpreter.variables.get('__defaults');
         __defaults();
 
         // Assign setters
-        interp.setters = classSetters;
+        interpreter.setters = classSetters;
 
     } //initStatics
 

@@ -1,15 +1,15 @@
-package hxs;
+package interpret;
 
-import hxs.Types;
+import interpret.Types;
 import hscript.Expr;
 
 /** Supercharged interpreter that behave almost like regular haxe.
     While we try not to waste any resource, it is expected that this interpreter
     gives priority to consistency with haxe over performance.
     If you want your code to be fast, your should just compile it with haxe compiler anyway :) */
-@:allow(hxs.DynamicClass)
-@:allow(hxs.DynamicInstance)
-class Interp extends hscript.Interp {
+@:allow(interpret.DynamicClass)
+@:allow(interpret.DynamicInstance)
+class Interpreter extends hscript.Interp {
 
     @:noCompletion
     public static var _variablesTypes:Class<Dynamic> = null;
@@ -20,7 +20,7 @@ class Interp extends hscript.Interp {
 
     var selfName:String;
 
-    var classInterp:Interp;
+    var classInterpreter:Interpreter;
 
     var keywords:Map<String,Dynamic> = [
         'null' => null,
@@ -38,7 +38,7 @@ class Interp extends hscript.Interp {
 
 /// Lifecycle
 
-    override public function new(dynamicClass:DynamicClass, selfName:String = 'this', ?classInterp:Interp) {
+    override public function new(dynamicClass:DynamicClass, selfName:String = 'this', ?classInterpreter:Interpreter) {
 
         super();
 
@@ -49,15 +49,15 @@ class Interp extends hscript.Interp {
         this.dynamicClass = dynamicClass;
         this.env = dynamicClass.env;
         this.selfName = selfName;
-        this.classInterp = classInterp;
+        this.classInterpreter = classInterpreter;
 
         if (selfName == 'this') {
             // Instance
-            this.variables.set('__hxs_type', dynamicClass.instanceType);
+            this.variables.set('__interpret_type', dynamicClass.instanceType);
         }
         else {
             // Statics
-            this.variables.set('__hxs_type', dynamicClass.classType);
+            this.variables.set('__interpret_type', dynamicClass.classType);
         }
 
     } //new
@@ -100,7 +100,7 @@ class Interp extends hscript.Interp {
 
         if (keywords.exists(id)) return keywords.get(id);
         if (id == selfName) return variables;
-        if (classInterp != null && id == classInterp.selfName) return classInterp.variables;
+        if (classInterpreter != null && id == classInterpreter.selfName) return classInterpreter.variables;
         var l = locals.get(id);
         if (l != null) {
             return l.r;
@@ -111,12 +111,12 @@ class Interp extends hscript.Interp {
         if (variables.exists(id)) {
             return variables.get(id);
         }
-        if (classInterp != null) {
-            if (classInterp.hasGetter(id)) {
-                return classInterp.variables.get('get_' + id)();
+        if (classInterpreter != null) {
+            if (classInterpreter.hasGetter(id)) {
+                return classInterpreter.variables.get('get_' + id)();
             }
-            if (classInterp.variables.exists(id)) {
-                return classInterp.variables.get(id);
+            if (classInterpreter.variables.exists(id)) {
+                return classInterpreter.variables.get(id);
             }
         }
         // Resolve module item
@@ -157,8 +157,8 @@ class Interp extends hscript.Interp {
 			if( l == null ) {
                 if (hasSetter(id)) {
 				    return variables.get('set_' + id)(v);
-                } else if (classInterp != null && classInterp.hasSetter(id)) {
-				    return classInterp.variables.get('set_' + id)(v);
+                } else if (classInterpreter != null && classInterpreter.hasSetter(id)) {
+				    return classInterpreter.variables.get('set_' + id)(v);
                 } else {
 				    variables.set(id,v);
                 }
@@ -202,12 +202,12 @@ class Interp extends hscript.Interp {
             }
             return null;
         }
-        else if (classInterp != null && o == classInterp.variables) {
-            if (classInterp.hasGetter(f)) {
-                return classInterp.variables.get('get_' + f)();
+        else if (classInterpreter != null && o == classInterpreter.variables) {
+            if (classInterpreter.hasGetter(f)) {
+                return classInterpreter.variables.get('get_' + f)();
             }
-            else if (classInterp.variables.exists(f)) {
-                return classInterp.variables.get(f);
+            else if (classInterpreter.variables.exists(f)) {
+                return classInterpreter.variables.get(f);
             }
             else if (existsAsExtension(f)) {
                 var typePath = dynamicClass.classType;
@@ -275,15 +275,15 @@ class Interp extends hscript.Interp {
             variables.set(f, v);
             return v;
         }
-        else if (classInterp != null && o == classInterp.variables) {
-            classInterp.variables.set(f, v);
+        else if (classInterpreter != null && o == classInterpreter.variables) {
+            classInterpreter.variables.set(f, v);
             return v;
         }
         else if (hasSetter(f)) {
             return variables.get('set_' + f)(v);
         }
-        else if (classInterp != null && classInterp.hasSetter(f)) {
-            return classInterp.variables.get('set_' + f)(v);
+        else if (classInterpreter != null && classInterpreter.hasSetter(f)) {
+            return classInterpreter.variables.get('set_' + f)(v);
         }
         return super.set(o, f, v);
 

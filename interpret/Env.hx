@@ -1,6 +1,6 @@
-package hxs;
+package interpret;
 
-import hxs.Types.RuntimeItem;
+import interpret.Types.RuntimeItem;
 
 class Env {
 
@@ -110,11 +110,11 @@ class Env {
     /** Load script code for the given class.
         This will update the code of any living instance
         as well as the newly created ones. */
-    public function patchScriptableClass(scriptableClass:Class<Scriptable>, dynamicClass:DynamicClass):Void {
+    public function patchInterpretableClass(interpratableClass:Class<Interpretable>, dynamicClass:DynamicClass):Void {
 
         // TODO
 
-    } //patchScriptableClass
+    } //patchInterpretableClass
 
     /** Like Std.is(), but accepts dynamic/scriptable types as well. */
     public function is(v:Dynamic, t:Dynamic):Bool {
@@ -124,8 +124,8 @@ class Env {
         t = TypeUtils.unwrap(t);
         var vType:String = null;
         var tType:String = null;
-        if (Std.is(v, Interp._variablesTypes) && v.exists('__hxs_type')) {
-            vType = v.get('__hxs_type');
+        if (Std.is(v, Interpreter._variablesTypes) && v.exists('__interpret_type')) {
+            vType = v.get('__interpret_type');
         }
         if (Std.is(t, DynamicClass)) {
             tType = TypeUtils.typeOf(t);

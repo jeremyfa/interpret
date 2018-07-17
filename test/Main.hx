@@ -1,8 +1,8 @@
 package test;
 
-import hxs.ParentClass;
-import hxs.Scriptable;
-import hxs.Types.ModuleItemKind;
+import interpret.ParentClass;
+import interpret.Interpretable;
+import interpret.Types.ModuleItemKind;
 // TODO add DynamicEnum/Enum support
 
 // TODO parse dynamic typedefs (alias only)
@@ -24,18 +24,18 @@ import hxs.Types.ModuleItemKind;
 //        -> move imports & usings at module level
 
 import sys.io.File;
-import hxs.DynamicClass;
-import hxs.ConvertHaxe;
-import hxs.Env;
-import hxs.DynamicModule;
+import interpret.DynamicClass;
+import interpret.ConvertHaxe;
+import interpret.Env;
+import interpret.DynamicModule;
 
 import haxe.io.Path;
 
-import hxs.ExtensionTest;
+import interpret.ExtensionTest;
 
-import hxs.Types;
+import interpret.Types;
 
-class TestNativeClass implements Scriptable extends ParentClass {
+class TestNativeClass implements Interpretable extends ParentClass {
 
     public function reload() {}
 
@@ -48,11 +48,11 @@ class TestNativeClass implements Scriptable extends ParentClass {
         var chouette = YOUPI('plop');
         trace(chouette);
 
-        trace(hxs.Scriptable);
-        trace(hxs.TypeUtils.typeOf(hxs.ParentClass));
+        trace(interpret.Interpretable);
+        trace(interpret.TypeUtils.typeOf(interpret.ParentClass));
         trace('IS TTypeKind: ' + Std.is(chouette, TTypeKind));
-        trace('IS Scriptable: ' + Std.is(this, hxs.Scriptable));
-        trace('IS ParentClass: ' + Std.is(this, hxs.ParentClass));
+        trace('IS Interpretable: ' + Std.is(this, interpret.Interpretable));
+        trace('IS ParentClass: ' + Std.is(this, interpret.ParentClass));
 
         someParentStuff();
 
@@ -82,19 +82,19 @@ class Main {
         parser.allowMetadata = true;
         parser.allowTypes = true;
         var program = parser.parseString(content);
-        var interp = new hxs.Interp();
+        var interpreter = new interpret.Interp();
 
         trace('EXEC');
-        interp.execute(program);
+        interpreter.execute(program);
 
-        var _new = interp.variables.get('new');
-        var hello = interp.variables.get('hello');
+        var _new = interpreter.variables.get('new');
+        var hello = interpreter.variables.get('hello');
 
         _new('Jon Doe');
 
         hello();
 
-        interp.variables.set('name', 'Pierrot');
+        interpreter.variables.set('name', 'Pierrot');
 
         hello();
 
@@ -107,14 +107,14 @@ class Main {
         // Create env
         var env = new Env();
         env.addDefaultModules();
-        //env.allowPackage('hxs');
+        //env.allowPackage('interpret');
 
-        env.addModule('hxs.ImportTest', DynamicModule.fromStatic(hxs.ImportTest));
-        env.addModule('hxs.Types', DynamicModule.fromStatic(hxs.Types));
-        env.addModule('hxs.Scriptable', DynamicModule.fromStatic(hxs.Scriptable));
-        env.addModule('hxs.TypeUtils', DynamicModule.fromStatic(hxs.TypeUtils));
-        env.addModule('hxs.SomClassWithParent', DynamicModule.fromStatic(hxs.SomeClassWithParent));
-        env.addModule('hxs.ParentClass', DynamicModule.fromStatic(hxs.ParentClass));
+        env.addModule('interpret.ImportTest', DynamicModule.fromStatic(interpret.ImportTest));
+        env.addModule('interpret.Types', DynamicModule.fromStatic(interpret.Types));
+        env.addModule('interpret.Interpretable', DynamicModule.fromStatic(interpret.Interpretable));
+        env.addModule('interpret.TypeUtils', DynamicModule.fromStatic(interpret.TypeUtils));
+        env.addModule('interpret.SomClassWithParent', DynamicModule.fromStatic(interpret.SomeClassWithParent));
+        env.addModule('interpret.ParentClass', DynamicModule.fromStatic(interpret.ParentClass));
         
         env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
 
@@ -144,7 +144,7 @@ class Main {
         // Call instance method
         //dynInstance.get('someInstanceMethod')('some', 'args');
 
-        //hxs.ImportTest.SomeOtherType.hi();
+        //interpret.ImportTest.SomeOtherType.hi();
 
         dynInstance.call('hello', ['Jon Snow']);
 

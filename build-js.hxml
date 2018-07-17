@@ -2,7 +2,7 @@
 -main test.Main
 -cp .
 -debug
--D hxs_scriptable
+-D interpretable
 -dce no
 -lib hxnodejs
 -js main.js

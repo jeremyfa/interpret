@@ -1,6 +1,6 @@
-package hxs;
+package interpret;
 
-import hxs.Types;
+import interpret.Types;
 
 using StringTools;
 

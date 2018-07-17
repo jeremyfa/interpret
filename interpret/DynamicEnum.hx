@@ -1,4 +1,4 @@
-package hxs;
+package interpret;
 
 class DynamicEnum {
 

@@ -1,9 +1,9 @@
-package hxs;
+package interpret;
 
 // TODO use per-env dynamic packages
 // TODO only allow dynamic packages on available ones
 
-@:allow(hxs.Env)
+@:allow(interpret.Env)
 class DynamicPackage {
 
     public var env(default,null):Env;

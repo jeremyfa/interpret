@@ -1,14 +1,14 @@
-package hxs;
+package interpret;
 
-import hxs.Interp;
+import interpret.Interpreter;
 
-@:allow(hxs.DynamicClass)
-@:allow(hxs.TypeUtils)
+@:allow(interpret.DynamicClass)
+@:allow(interpret.TypeUtils)
 class DynamicInstance {
 
 /// Properties
 
-    var interp:Interp;
+    var interpreter:Interpreter;
 
     var dynamicClass:DynamicClass;
 
@@ -23,34 +23,34 @@ class DynamicInstance {
     private function init(?args:Array<Dynamic>) {
 
         // Create class interpreter and feed it with our program
-        interp = new Interp(dynamicClass);
+        interpreter = new Interpreter(dynamicClass);
 
         // Add class interpreter to this instance interpreter (for static stuff)
-        interp.classInterp = dynamicClass.interp;
+        interpreter.classInterpreter = dynamicClass.interpreter;
 
         // Feed the interpreter with our program
-        interp.execute(dynamicClass.instanceProgram);
+        interpreter.execute(dynamicClass.instanceProgram);
 
         // Set all properties to null
         // Will ensure their key exists in variables map
         for (prop in dynamicClass.instanceProperties) {
-            interp.variables.set(prop, null);
+            interpreter.variables.set(prop, null);
         }
 
         // Assign getters
-        interp.getters = dynamicClass.instanceGetters;
+        interpreter.getters = dynamicClass.instanceGetters;
 
         // Generate instance variables
-        var __defaults = interp.variables.get('__defaults');
+        var __defaults = interpreter.variables.get('__defaults');
         __defaults();
 
         // Assign setters
-        interp.setters = dynamicClass.instanceSetters;
+        interpreter.setters = dynamicClass.instanceSetters;
 
         // Call new()
-        var _new = interp.variables.get('new');
+        var _new = interpreter.variables.get('new');
         if (_new != null) {
-            Reflect.callMethod(interp.variables, _new, args != null ? cast args : []);
+            Reflect.callMethod(interpreter.variables, _new, args != null ? cast args : []);
         }
 
     } //init
@@ -59,13 +59,13 @@ class DynamicInstance {
 
     public function get(name:String):Dynamic {
 
-        return TypeUtils.unwrap(interp.resolve(name));
+        return TypeUtils.unwrap(interpreter.resolve(name));
 
     } //get
 
     public function call(name:String, args:Array<Dynamic>):Dynamic {
 
-        var method = interp.resolve(name);
+        var method = interpreter.resolve(name);
         if (method == null) {
             throw 'Method not found: $name';
         }
