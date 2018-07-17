@@ -106,6 +106,7 @@ class Main {
 
         // Create env
         var env = new Env();
+        env.addDefaultModules();
         //env.allowPackage('hxs');
 
         env.addModule('hxs.ImportTest', DynamicModule.fromStatic(hxs.ImportTest));

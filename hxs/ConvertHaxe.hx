@@ -378,6 +378,29 @@ class ConvertHaxe {
             fail('Invalid class', i, haxe);
         }
 
+        var interfaces:Array<TParent> = [];
+        var parent:TParent = null;
+        var parentsCode = RE_CLASS_DECL.matched(2);
+        if (parentsCode != null) {
+            parentsCode = parentsCode.trim();
+            while (RE_CLASS_PARENT.match(parentsCode)) {
+                var parentName = cleanType(RE_CLASS_PARENT.matched(2));
+                var parentKeyword = RE_CLASS_PARENT.matched(1);
+                if (parentKeyword == 'implements') {
+                    interfaces.push({
+                        name: parentName,
+                        kind: INTERFACE
+                    });
+                } else {
+                    parent = {
+                        name: parentName,
+                        kind: SUPERCLASS
+                    };
+                }
+                parentsCode = parentsCode.substring(RE_CLASS_PARENT.matched(0).length);
+            }
+        }
+
         i += RE_CLASS_DECL.matched(0).length;
         openBraces++;
         inClassBraces = openBraces;
@@ -385,7 +408,9 @@ class ConvertHaxe {
         tokens.push(TType({
             pos: i,
             kind: CLASS,
-            name: RE_CLASS_DECL.matched(1)
+            name: RE_CLASS_DECL.matched(1),
+            interfaces: interfaces,
+            parent: parent
         }));
 
     } //consumeClassDecl
@@ -1213,5 +1238,7 @@ class ConvertHaxe {
     static var RE_ANY_SPACE = ~/\s+/gm;
 
     static var RE_TYPE_WITH_PARAM = ~/^([a-zA-Z_][a-zA-Z_0-9]*)\s*<([a-zA-Z0-9,<>_:?()\s-]+)>/;
+
+    static var RE_CLASS_PARENT = ~/^\s*(implements|extends)\s+((?:[a-zA-Z_][a-zA-Z_0-9\.]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?)/;
 
 } //HaxeToHscript

@@ -153,9 +153,20 @@ class TType {
 
     @:optional public var type:String;
 
-    @:optional public var parent:TType;
+    @:optional public var interfaces:Array<TParent>;
+
+    @:optional public var parent:TParent;
 
 } //TType
+
+@:structInit
+class TParent {
+
+    public var name:String;
+
+    public var kind:TParentKind;
+
+} //TParent
 
 enum TTypeKind {
 
@@ -167,7 +178,15 @@ enum TTypeKind {
 
     ABSTRACT;
 
-    YOUPI(bref:String);
+    YOUPI(bref:String); // TODO remove
+
+} //TTypeKind
+
+enum TParentKind {
+
+    SUPERCLASS;
+
+    INTERFACE;
 
 } //TTypeKind
 

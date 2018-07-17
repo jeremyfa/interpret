@@ -21,11 +21,9 @@ class Env {
 
     public function new() {
 
-        addDefaultModules();
-
     } //new
 
-    function addDefaultModules() {
+    public function addDefaultModules() {
 
         var stdModule:DynamicModule = DynamicModule.fromStatic(Std);
 
