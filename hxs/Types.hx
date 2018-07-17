@@ -153,6 +153,8 @@ class TType {
 
     @:optional public var type:String;
 
+    @:optional public var parent:TType;
+
 } //TType
 
 enum TTypeKind {

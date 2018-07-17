@@ -11,6 +11,9 @@ import hscript.Expr;
 @:allow(hxs.DynamicInstance)
 class Interp extends hscript.Interp {
 
+    @:noCompletion
+    public static var _variablesTypes:Class<Dynamic> = null;
+
 /// Properties
 
     var oldLocals:Array<Int> = [];
@@ -39,10 +42,23 @@ class Interp extends hscript.Interp {
 
         super();
 
+        if (_variablesTypes == null) {
+            _variablesTypes = Type.getClass(variables);
+        }
+
         this.dynamicClass = dynamicClass;
         this.env = dynamicClass.env;
         this.selfName = selfName;
         this.classInterp = classInterp;
+
+        if (selfName == 'this') {
+            // Instance
+            this.variables.set('__hxs_type', dynamicClass.instanceType);
+        }
+        else {
+            // Statics
+            this.variables.set('__hxs_type', dynamicClass.classType);
+        }
 
     } //new
 
@@ -106,23 +122,7 @@ class Interp extends hscript.Interp {
         // Resolve module item
         var moduleItem = dynamicClass.imports.resolve(id);
         if (moduleItem != null) {
-            switch (moduleItem) {
-                case ExtensionItem(subItem, _):
-                    // We ensure this won't be considered as an extension item
-                    // but just a regular field
-                    switch (subItem) {
-                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
-                            // Unwrap
-                            return rawItem;
-                        default:
-                            return moduleItem;
-                    }
-                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
-                    // Unwrap
-                    return rawItem;
-                default:
-                    return moduleItem;
-            }
+            return unwrap(moduleItem);
         }
         if (env.modules.exists(id)) {
             var module = env.modules.get(id);
@@ -225,24 +225,7 @@ class Interp extends hscript.Interp {
                     return super.get(rawItem, f);
                 case ClassItem(rawItem, moduleId, name):
                     var module = @:privateAccess env.modulesById.get(moduleId);
-                    var resolved = module.items.get(name + '.' + f);
-                    switch (resolved) {
-                        case ExtensionItem(subItem, _):
-                            // We ensure this won't be considered as an extension item
-                            // but just a regular field
-                            switch (subItem) {
-                                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
-                                    // Unwrap
-                                    return rawItem;
-                                default:
-                                    return moduleItem;
-                            }
-                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
-                            // Unwrap
-                            return rawItem;
-                        default:
-                            return resolved;
-                    }
+                    return unwrap(module.items.get(name + '.' + f));
                 case EnumItem(rawItem, moduleId, name):
                     var module = @:privateAccess env.modulesById.get(moduleId);
                     var resolved = module.items.get(name + '.' + f);
@@ -254,7 +237,7 @@ class Interp extends hscript.Interp {
                             return resolved;
                     }
                 case PackageItem(pack):
-                    return pack.getSub(f);
+                    return unwrap(pack.getSub(f));
                 default:
                     return null;
             }
@@ -305,5 +288,34 @@ class Interp extends hscript.Interp {
         return super.set(o, f, v);
 
     } //set
+
+    inline function unwrap(value:Dynamic):Dynamic {
+
+        if (value == null) return null;
+
+        if (Std.is(value, RuntimeItem)) {
+            var item:RuntimeItem = cast value;
+            switch (item) {
+                case ExtensionItem(subItem, _):
+                    // We ensure this won't be considered as an extension item
+                    // but just a regular field
+                    switch (subItem) {
+                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
+                            // Unwrap
+                            return rawItem;
+                        default:
+                            return subItem;
+                    }
+                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
+                    // Unwrap
+                    return rawItem;
+                default:
+                    return value;
+            }
+        }
+
+        return value;
+
+    } //unwrap
 
 } //Interp

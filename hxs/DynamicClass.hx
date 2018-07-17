@@ -13,6 +13,7 @@ import hscript.Parser as HscriptParser;
     then executes it with an extended hscript interpreter. */
 @:allow(hxs.DynamicInstance)
 @:allow(hxs.Interp)
+@:allow(hxs.TypeUtils)
 class DynamicClass {
 
 /// Properties
@@ -82,7 +83,7 @@ class DynamicClass {
 
     public function get(name:String):Dynamic {
 
-        return unwrap(interp.resolve(name));
+        return TypeUtils.unwrap(interp.resolve(name));
 
     } //get
 
@@ -92,35 +93,9 @@ class DynamicClass {
         if (method == null) {
             throw 'Method not found: $name';
         }
-        return unwrap(Reflect.callMethod(null, method, args));
+        return TypeUtils.unwrap(Reflect.callMethod(null, method, args));
 
     } //call
-
-    public static function unwrap(value:Dynamic):Dynamic {
-
-        if (value == null) return null;
-
-        if (Std.is(value, RuntimeItem)) {
-            var item:RuntimeItem = cast value;
-            switch (item) {
-                case ExtensionItem(item, extendedType):
-                    return unwrap(item);
-                case ClassFieldItem(rawItem):
-                    return rawItem;
-                case ClassItem(rawItem, _, _):
-                    return rawItem;
-                case EnumItem(rawItem, _, _):
-                    return rawItem;
-                case EnumFieldItem(rawItem, _, _):
-                    return rawItem;
-                case PackageItem(pack):
-                    return null;
-            }
-        }
-
-        return value;
-
-    } //unwrap
 
 /// Internal
 

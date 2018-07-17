@@ -7,9 +7,13 @@ import hxs.Types;
 using StringTools;
 
 /** Some scriptable class */
-class SomeClass implements hxs.Scriptable {
+class SomeClass implements hxs.Scriptable extends hxs.ParentClass {
 
     var myName = 'Jean Dupont';
+
+    public function reload():Void {
+        trace('RELOAD');
+    }
 
     public function new() {
 
@@ -20,8 +24,16 @@ class SomeClass implements hxs.Scriptable {
         var chouette = YOUPI('plop');
         trace(chouette);
 
-        trace(ImportTest);
-        ImportTest.hello();
+        trace(hxs.Scriptable);
+        trace(hxs.TypeUtils.typeOf(hxs.ParentClass));
+        trace('IS TTypeKind: ' + Std.is(chouette, TTypeKind));
+        trace('IS Scriptable: ' + Std.is(this, hxs.Scriptable));
+        trace('IS ParentClass: ' + Std.is(this, hxs.ParentClass));
+
+        someParentStuff();
+
+        //trace(ImportTest);
+        //ImportTest.hello();
 
     } //new
 

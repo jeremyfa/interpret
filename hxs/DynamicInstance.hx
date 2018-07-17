@@ -3,6 +3,7 @@ package hxs;
 import hxs.Interp;
 
 @:allow(hxs.DynamicClass)
+@:allow(hxs.TypeUtils)
 class DynamicInstance {
 
 /// Properties
@@ -58,7 +59,7 @@ class DynamicInstance {
 
     public function get(name:String):Dynamic {
 
-        return DynamicClass.unwrap(interp.resolve(name));
+        return TypeUtils.unwrap(interp.resolve(name));
 
     } //get
 
@@ -68,7 +69,7 @@ class DynamicInstance {
         if (method == null) {
             throw 'Method not found: $name';
         }
-        return DynamicClass.unwrap(Reflect.callMethod(null, method, args));
+        return TypeUtils.unwrap(Reflect.callMethod(null, method, args));
 
     } //call
 

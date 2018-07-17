@@ -16,6 +16,15 @@ class TypeUtils {
         if (Std.is(obj, Array)) return 'Array';
         if (Std.is(obj, Map)) return 'Map';
 
+        if (Std.is(obj, DynamicClass)) {
+            var c:DynamicClass = cast obj;
+            return c.classType;
+        }
+        if (Std.is(obj, DynamicInstance)) {
+            var i:DynamicInstance = cast obj;
+            return i.dynamicClass.instanceType;
+        }
+
         if (Std.is(obj, RuntimeItem)) {
             var item:RuntimeItem = cast obj;
             switch (item) {
@@ -94,5 +103,31 @@ class TypeUtils {
         return result;
 
     } //toResolvedType
+
+    public static function unwrap(value:Dynamic):Dynamic {
+
+        if (value == null) return null;
+
+        if (Std.is(value, RuntimeItem)) {
+            var item:RuntimeItem = cast value;
+            switch (item) {
+                case ExtensionItem(item, extendedType):
+                    return unwrap(item);
+                case ClassFieldItem(rawItem):
+                    return rawItem;
+                case ClassItem(rawItem, _, _):
+                    return rawItem;
+                case EnumItem(rawItem, _, _):
+                    return rawItem;
+                case EnumFieldItem(rawItem, _, _):
+                    return rawItem;
+                case PackageItem(pack):
+                    return value;
+            }
+        }
+
+        return value;
+
+    } //unwrap
 
 } //TypeUtils

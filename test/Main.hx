@@ -1,5 +1,7 @@
 package test;
 
+import hxs.ParentClass;
+import hxs.Scriptable;
 import hxs.Types.ModuleItemKind;
 // TODO add DynamicEnum/Enum support
 
@@ -32,6 +34,31 @@ import haxe.io.Path;
 import hxs.ExtensionTest;
 
 import hxs.Types;
+
+class TestNativeClass implements Scriptable extends ParentClass {
+
+    public function reload() {}
+
+    public function new() {
+
+        //trace('Jérémy'.urlEncode());
+
+        //var truc = CLASS;
+        //var bidule = YOUPI('plop');
+        var chouette = YOUPI('plop');
+        trace(chouette);
+
+        trace(hxs.Scriptable);
+        trace(hxs.TypeUtils.typeOf(hxs.ParentClass));
+        trace('IS TTypeKind: ' + Std.is(chouette, TTypeKind));
+        trace('IS Scriptable: ' + Std.is(this, hxs.Scriptable));
+        trace('IS ParentClass: ' + Std.is(this, hxs.ParentClass));
+
+        someParentStuff();
+
+    }
+
+}
 
 class Main {
 
@@ -83,12 +110,17 @@ class Main {
 
         env.addModule('hxs.ImportTest', DynamicModule.fromStatic(hxs.ImportTest));
         env.addModule('hxs.Types', DynamicModule.fromStatic(hxs.Types));
+        env.addModule('hxs.Scriptable', DynamicModule.fromStatic(hxs.Scriptable));
+        env.addModule('hxs.TypeUtils', DynamicModule.fromStatic(hxs.TypeUtils));
+        env.addModule('hxs.ParentClass', DynamicModule.fromStatic(hxs.ParentClass));
         
         env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
 
         var dynModule = DynamicModule.fromString(env, 'SomeClass', content);
 
         var dynClass = dynModule.dynamicClasses.get('SomeClass');
+
+        var that = new TestNativeClass();
          
         //var dynClass = dynModule.
 

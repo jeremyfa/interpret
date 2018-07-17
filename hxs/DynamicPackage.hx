@@ -40,7 +40,7 @@ class DynamicPackage {
         // Resolve sub-package
         // There is no check at this stage to determine whether the package is valid or not.
         // The check is done only when importing {package}.SomeModule, which is fine so far.
-        var resolved = env.getPackage(fullPath, false);
+        var resolved = env.getPackage(fullPath);
         resolvedSubs.set(subPath, resolved);
         return resolved;
 

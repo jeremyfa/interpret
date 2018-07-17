@@ -5,4 +5,6 @@ package hxs;
 #end
 interface Scriptable {
 
+    function reload():Void;
+
 } //Scriptable
