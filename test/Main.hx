@@ -113,6 +113,7 @@ class Main {
         env.addModule('hxs.Types', DynamicModule.fromStatic(hxs.Types));
         env.addModule('hxs.Scriptable', DynamicModule.fromStatic(hxs.Scriptable));
         env.addModule('hxs.TypeUtils', DynamicModule.fromStatic(hxs.TypeUtils));
+        env.addModule('hxs.SomClassWithParent', DynamicModule.fromStatic(hxs.SomeClassWithParent));
         env.addModule('hxs.ParentClass', DynamicModule.fromStatic(hxs.ParentClass));
         
         env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
@@ -133,6 +134,9 @@ class Main {
 
         // Print some static property from this class
         //trace(dynClass.get('someStaticProperty'));
+
+        trace('ENV SUPERCLASSES ' + @:privateAccess env.superClasses);
+        trace('ENV INTERFACES ' + @:privateAccess env.interfaces);
 
         // Create instance
         var dynInstance = dynClass.createInstance();

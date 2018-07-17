@@ -19,6 +19,12 @@ class Env {
     /** Internal map of allowed root packages (computed from modules) */
     var availablePacks:Map<String,Bool> = new Map();
 
+    /** Internal map of classes and the superclass they extend (if any) */
+    var superClasses:Map<String,String> = new Map();
+
+    /** Internal map of classes and the interfaces they implement (if any) */
+    var interfaces:Map<String,Map<String,Bool>> = new Map();
+
     public function new() {
 
     } //new
@@ -47,13 +53,40 @@ class Env {
         }
 
         // Update aliases
-        for (key in module.aliases) {
-            var val = module.aliases.get(key);
-            if (!aliases.exists(key)) {
-                aliases.set(key, val);
+        if (module.aliases != null) {
+            for (key in module.aliases.keys()) {
+                var val = module.aliases.get(key);
+                if (!aliases.exists(key)) {
+                    aliases.set(key, val);
+                }
+                if (!aliases.exists(val)) {
+                    aliases.set(val, key);
+                }
             }
-            if (!aliases.exists(val)) {
-                aliases.set(val, key);
+        }
+
+        // Update superclasses
+        if (module.superClasses != null) {
+            for (key in module.superClasses.keys()) {
+                var val = module.superClasses.get(key);
+                if (!superClasses.exists(key)) {
+                    superClasses.set(key, val);
+                }
+            }
+        }
+
+        // Update interfaces
+        if (module.interfaces != null) {
+            for (key in module.interfaces.keys()) {
+                var subItems = module.interfaces.get(key);
+                var envSubItems = interfaces.get(key);
+                if (envSubItems == null) {
+                    envSubItems = new Map();
+                    interfaces.set(key, envSubItems);
+                }
+                for (subKey in subItems.keys()) {
+                    envSubItems.set(subKey, true);
+                }
             }
         }
 

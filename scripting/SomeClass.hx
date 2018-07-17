@@ -2,12 +2,13 @@ package test;
 
 import hxs.ImportTest;
 import hxs.Types;
+import hxs.Scriptable;
 //import hxs.*;
 
 using StringTools;
 
 /** Some scriptable class */
-class SomeClass implements hxs.Scriptable extends hxs.ParentClass {
+class SomeClass implements Scriptable extends hxs.ParentClass {
 
     var myName = 'Jean Dupont';
 

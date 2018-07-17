@@ -46,6 +46,14 @@ class DynamicModule {
     @:noCompletion
     public var lazyLoad:DynamicModule->Void = null;
 
+    /** Internal map of classes and the superclass they extend (if any) */
+    @:noCompletion
+    public var superClasses:Map<String,String> = new Map();
+
+    /** Internal map of classes and the interfaces they implement (if any) */
+    @:noCompletion
+    public var interfaces:Map<String,Map<String,Bool>> = new Map();
+
 /// Lifecycle
 
     public function new() {
@@ -85,6 +93,23 @@ class DynamicModule {
         aliases.set(alias, name);
 
     } //alias
+
+    public function addSuperClass(child:String, superClass:String) {
+
+        superClasses.set(child, superClass);
+
+    } //addSuperClass
+
+    public function addInterface(child:String, interface_:String) {
+
+        var subItems = interfaces.get(child);
+        if (subItems == null) {
+            subItems = new Map();
+            interfaces.set(child, subItems);
+        }
+        subItems.set(interface_, true);
+
+    } //addInterface
 
 /// From string
 
@@ -129,6 +154,14 @@ class DynamicModule {
                         module.dynamicClasses.set(data.name, dynClass);
                         currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
                         module.add(currentClassPath, dynClass, ModuleItemKind.CLASS, null);
+                        if (data.parent != null) {
+                            module.addSuperClass(currentClassPath, TypeUtils.toResolvedType(module.imports, data.parent.name));
+                        }
+                        if (data.interfaces != null) {
+                            for (item in data.interfaces) {
+                                module.addInterface(currentClassPath, TypeUtils.toResolvedType(module.imports, item.name));
+                            }
+                        }
                     }
                     else {
                         currentClassPath = null;
@@ -195,6 +228,8 @@ class DynamicModule {
 
         var toAdd:Array<Array<Dynamic>> = [];
         var toAlias:Array<Array<String>> = [];
+        var toSuperClass:Array<Array<String>> = [];
+        var toInterface:Array<Array<String>> = [];
         
         for (item in module) {
             switch (item) {
@@ -207,6 +242,21 @@ class DynamicModule {
                         toAlias.push([rawTypePath, subTypePath]);
                     }
                     toAdd.push([subTypePath, ModuleItemKind.CLASS]);
+
+                    // Superclass
+                    var prevParent = t;
+                    var parentHold = t.get().superClass;
+                    var parent = parentHold != null ? parentHold.t : null;
+                    while (parent != null) {
+                        toSuperClass.push([prevParent.toString(), parent.toString()]);
+                        parentHold = parent.get().superClass;
+                        parent = parentHold != null ? parentHold.t : null;
+                    }
+
+                    // Interfaces
+                    for (item in t.get().interfaces) {
+                        toInterface.push([subTypePath, item.t.toString()]);
+                    }
 
                     // Static fields
                     for (field in t.get().statics.get()) {
@@ -302,11 +352,23 @@ class DynamicModule {
             var expr = macro module.alias($v{item[0]}, $v{item[1]});
             aliasExprs.push(expr);
         }
+        var superClassExprs:Array<Expr> = [];
+        for (item in toSuperClass) {
+            var expr = macro module.addSuperClass($v{item[0]}, $v{item[1]});
+            superClassExprs.push(expr);
+        }
+        var interfaceExprs:Array<Expr> = [];
+        for (item in toInterface) {
+            var expr = macro module.addInterface($v{item[0]}, $v{item[1]});
+            interfaceExprs.push(expr);
+        }
 
         var result = macro function() {
             var module = new hxs.DynamicModule();
             module.pack = $v{packString};
             $b{aliasExprs};
+            $b{superClassExprs};
+            $b{interfaceExprs};
             module.lazyLoad = function(mod) $b{addExprs};
             return module;
         }();
