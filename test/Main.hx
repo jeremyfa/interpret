@@ -118,9 +118,9 @@ class Main {
         
         env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
 
-        var dynModule = DynamicModule.fromString(env, 'SomeClass', content);
+        env.addModule('test.SomeClass', DynamicModule.fromString(env, 'SomeClass', content));
 
-        var dynClass = dynModule.dynamicClasses.get('SomeClass');
+        var dynClass = env.modules.get('test.SomeClass').dynamicClasses.get('SomeClass');
 
         var that = new TestNativeClass();
          

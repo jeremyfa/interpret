@@ -2,6 +2,8 @@ package interpret;
 
 import interpret.Types.RuntimeItem;
 
+using StringTools;
+
 class Env {
 
     /** Mapping of modules (similar to static modules, but at runtime) from type paths. */
@@ -81,8 +83,12 @@ class Env {
                 var subItems = module.interfaces.get(key);
                 var envSubItems = interfaces.get(key);
                 if (envSubItems == null) {
-                    envSubItems = new Map();
-                    interfaces.set(key, envSubItems);
+                    var aliasKey = aliases.get(key);
+                    envSubItems = interfaces.get(aliasKey);
+                    if (envSubItems == null) {
+                        envSubItems = new Map();
+                        interfaces.set(key, envSubItems);
+                    }
                 }
                 for (subKey in subItems.keys()) {
                     envSubItems.set(subKey, true);
@@ -105,7 +111,27 @@ class Env {
 
         return packs.get(path);
 
-    } //get
+    } //getPackage
+
+    public function getSuperClass(classPath:String):String {
+
+        var parent = superClasses.get(classPath);
+        if (parent != null) return parent;
+        var alias = aliases.get(classPath);
+        if (alias == null) return null;
+        return superClasses.get(alias);
+
+    } //getSuperClass
+
+    public function getInterfaces(classPath:String):Map<String,Bool> {
+
+        var subItems = interfaces.get(classPath);
+        if (subItems != null) return subItems;
+        var alias = aliases.get(classPath);
+        if (alias == null) return null;
+        return interfaces.get(alias);
+
+    } //getInterfaces
 
     /** Load script code for the given class.
         This will update the code of any living instance
@@ -123,29 +149,81 @@ class Env {
         v = TypeUtils.unwrap(v);
         t = TypeUtils.unwrap(t);
         var vType:String = null;
-        var tType:String = null;
+        var tClassType:String = null;
         if (Std.is(v, Interpreter._variablesTypes) && v.exists('__interpret_type')) {
             vType = v.get('__interpret_type');
         }
         if (Std.is(t, DynamicClass)) {
-            tType = TypeUtils.typeOf(t);
+            tClassType = TypeUtils.typeOf(t);
         }
-        if (vType == null && tType == null) {
+        if (vType == null && tClassType == null) {
             // Nothing dynamic, use standard Std.is()
             return Std.is(v, t);
         }
         else {
             // Need to do runtime checks
             if (vType == null) vType = TypeUtils.typeOf(v);
-            if (tType == null) tType = TypeUtils.typeOf(t);
-            return isKindOf(vType, tType);
+            if (tClassType == null) tClassType = TypeUtils.typeOf(t);
+            return isKindOfClass(vType, tClassType);
         }
 
     } //is
 
+    function isKindOfClass(vType:String, tClassType:String):Bool {
+
+        if (tClassType.indexOf(' ') != -1) tClassType = tClassType.replace(' ', '');
+        if (!tClassType.startsWith('Class<')) return false;
+        var result = isKindOf(vType, tClassType.substring(6, tClassType.length-1));
+
+        trace('isKindOf($vType, ${tClassType.substring(6, tClassType.length-1)}) -> ' + result);
+
+        return result;
+
+    } //isKindOfClass
+
     function isKindOf(vType:String, tType:String):Bool {
 
-        trace('IS KIND OF($vType, $tType) not implemented yet, returns false');
+        var tAlias = aliases.get(tType);
+        var vActive = vType;
+        
+        while (vActive != null) {
+
+            if (vActive == tType) return true;
+            if (tAlias != null && vActive == tAlias) return true;
+
+            var vAlias = aliases.get(vActive);
+
+            if (vAlias != null) {
+                if (vAlias == tType) return true;
+                if (vAlias == tAlias) return true;
+            }
+
+            // Interfaces?
+            var interfaces = getInterfaces(vActive);
+            if (interfaces != null) {
+                for (item in interfaces.keys()) {
+                    var iActive = item;
+                    while (iActive != null) {
+
+                        if (iActive == tType) return true;
+                        if (iActive == tAlias) return true;
+
+                        var iAlias = aliases.get(iActive);
+
+                        if (iAlias != null) {
+                            if (iAlias == tType) return true;
+                            if (iAlias == tAlias) return true;
+                        }
+
+                        // Parent interface?
+                        iActive = getSuperClass(iActive);
+                    }
+                }
+            }
+
+            // Parent class?
+            vActive = getSuperClass(vActive);
+        }
 
         return false;
 

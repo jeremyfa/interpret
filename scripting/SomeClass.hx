@@ -20,8 +20,6 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
 
         trace('Jérémy'.urlEncode());
 
-        //var truc = CLASS;
-        //var bidule = YOUPI('plop');
         var chouette = YOUPI('plop');
         trace(chouette);
 

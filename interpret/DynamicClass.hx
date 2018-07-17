@@ -24,7 +24,7 @@ class DynamicClass {
 
     public var env(default,null):Env;
 
-    var interpreter:Interpreter;
+    var interpreter:Interpreter = null;
 
     var classProgram:HscriptExpr;
 
@@ -66,13 +66,14 @@ class DynamicClass {
         this.options = options;
 
         computeHscript();
-        initStatics();
 
     } //new
 
 /// Public API
 
     public function createInstance(?args:Array<Dynamic>) {
+
+        if (interpreter == null) initInterpreter();
 
         var instance = new DynamicInstance(this);
         instances.push(instance);
@@ -83,11 +84,15 @@ class DynamicClass {
 
     public function get(name:String):Dynamic {
 
+        if (interpreter == null) initInterpreter();
+
         return TypeUtils.unwrap(interpreter.resolve(name));
 
     } //get
 
     public function call(name:String, args:Array<Dynamic>):Dynamic {
+
+        if (interpreter == null) initInterpreter();
 
         var method = interpreter.resolve(name);
         if (method == null) {
@@ -266,11 +271,16 @@ class DynamicClass {
 
                 case TField(data):
                     if (data.kind == METHOD) {
-                        var result = modifiers.exists('static') ? classResult : instanceResult;
+                        var isStatic = modifiers.exists('static');
+                        var result = isStatic ? classResult : instanceResult;
                         result.add(indent);
                         result.add('function ');
                         result.add(data.name);
                         result.add('(');
+                        /*result.add(className);
+                        if (!isStatic) {
+                            result.add(', this');
+                        }*/
                         var i = 0;
                         var hasDefaultValues = false;
                         for (arg in data.args) {
@@ -333,9 +343,15 @@ class DynamicClass {
         classProgram = parser.parseString(classHscript);
         instanceProgram = parser.parseString(instanceHscript);
 
+        Sys.println(classHscript);
+        Sys.println('-------');
+        Sys.println(instanceHscript);
+        Sys.println('-------');
+        Sys.exit(0);
+
     } //computeHscript
 
-    function initStatics() {
+    function initInterpreter() {
 
         // Create class interpreter
         interpreter = new Interpreter(this, className);
@@ -359,7 +375,7 @@ class DynamicClass {
         // Assign setters
         interpreter.setters = classSetters;
 
-    } //initStatics
+    } //initInterpreter
 
 } //DynamicClass
 
