@@ -150,8 +150,8 @@ class Env {
         t = TypeUtils.unwrap(t);
         var vType:String = null;
         var tClassType:String = null;
-        if (Std.is(v, Interpreter._variablesTypes) && v.exists('__interpret_type')) {
-            vType = v.get('__interpret_type');
+        if (Std.is(v, DynamicClass._contextType) && v.exists('__interpretType')) {
+            vType = v.get('__interpretType');
         }
         if (Std.is(t, DynamicClass)) {
             tClassType = TypeUtils.typeOf(t);
@@ -173,11 +173,7 @@ class Env {
 
         if (tClassType.indexOf(' ') != -1) tClassType = tClassType.replace(' ', '');
         if (!tClassType.startsWith('Class<')) return false;
-        var result = isKindOf(vType, tClassType.substring(6, tClassType.length-1));
-
-        trace('isKindOf($vType, ${tClassType.substring(6, tClassType.length-1)}) -> ' + result);
-
-        return result;
+        return isKindOf(vType, tClassType.substring(6, tClassType.length-1));
 
     } //isKindOfClass
 

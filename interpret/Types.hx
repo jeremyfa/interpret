@@ -34,6 +34,10 @@ enum RuntimeItem {
 
     PackageItem(pack:DynamicPackage);
 
+    SuperClassItem(item:RuntimeItem);
+
+    SuperClassConstructorItem(item:RuntimeItem);
+
 } //RuntimeItem
 
 @:structInit

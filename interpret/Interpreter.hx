@@ -11,9 +11,6 @@ import hscript.Expr;
 @:allow(interpret.DynamicInstance)
 class Interpreter extends hscript.Interp {
 
-    @:noCompletion
-    public static var _variablesTypes:Class<Dynamic> = null;
-
 /// Properties
 
     var oldLocals:Array<Int> = [];
@@ -21,12 +18,6 @@ class Interpreter extends hscript.Interp {
     var selfName:String;
 
     var classInterpreter:Interpreter;
-
-    var keywords:Map<String,Dynamic> = [
-        'null' => null,
-        'false' => false,
-        'true' => true
-    ];
 
     var getters:Map<String,Bool> = null;
 
@@ -42,23 +33,14 @@ class Interpreter extends hscript.Interp {
 
         super();
 
-        if (_variablesTypes == null) {
-            _variablesTypes = Type.getClass(variables);
-        }
-
         this.dynamicClass = dynamicClass;
         this.env = dynamicClass.env;
         this.selfName = selfName;
         this.classInterpreter = classInterpreter;
 
-        if (selfName == 'this') {
-            // Instance
-            this.variables.set('__interpret_type', dynamicClass.instanceType);
-        }
-        else {
-            // Statics
-            this.variables.set('__interpret_type', dynamicClass.classType);
-        }
+        this.variables.set('null', null);
+        this.variables.set('false', false);
+        this.variables.set('true', true);
 
     } //new
 
@@ -98,22 +80,34 @@ class Interpreter extends hscript.Interp {
 
     override function resolve(id:String):Dynamic {
 
-        if (keywords.exists(id)) return keywords.get(id);
-        if (id == selfName) return variables;
-        if (classInterpreter != null && id == classInterpreter.selfName) return classInterpreter.variables;
+        //if (id == selfName) return resolve;
+        //if (classInterpreter != null && id == classInterpreter.selfName) return classInterpreter.variables;
         var l = locals.get(id);
         if (l != null) {
             return l.r;
         }
+        var self:Map<String,Dynamic> = locals.get(selfName).r;
         if (hasGetter(id)) {
-            return variables.get('get_' + id)();
+            if (classInterpreter != null) {
+                var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+                return variables.get('get_' + id)(classSelf, self);
+            } else {
+                return variables.get('get_' + id)(self);
+            }
+        }
+        if (self.exists(id)) {
+            return self.get(id);
         }
         if (variables.exists(id)) {
             return variables.get(id);
         }
         if (classInterpreter != null) {
+            var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
             if (classInterpreter.hasGetter(id)) {
-                return classInterpreter.variables.get('get_' + id)();
+                return classInterpreter.variables.get('get_' + id)(classSelf);
+            }
+            if (classSelf.exists(id)) {
+                return classSelf.get(id);
             }
             if (classInterpreter.variables.exists(id)) {
                 return classInterpreter.variables.get(id);
@@ -155,12 +149,20 @@ class Interpreter extends hscript.Interp {
 		case EIdent(id):
 			var l = locals.get(id);
 			if( l == null ) {
+                var self:Map<String,Dynamic> = locals.get(selfName).r;
                 if (hasSetter(id)) {
-				    return variables.get('set_' + id)(v);
+                    if (classInterpreter != null) {
+                        var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+				        return variables.get('set_' + id)(classSelf, self, v);
+                    } else {
+				        return variables.get('set_' + id)(self, v);
+                    }
                 } else if (classInterpreter != null && classInterpreter.hasSetter(id)) {
-				    return classInterpreter.variables.get('set_' + id)(v);
+                    var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+				    return classInterpreter.variables.get('set_' + id)(classSelf, v);
                 } else {
-				    variables.set(id,v);
+				    //variables.set(id,v); // TODO forbid this or not?
+                    return v;
                 }
             }
 			else
@@ -186,12 +188,18 @@ class Interpreter extends hscript.Interp {
 
     override function get(o:Dynamic, f:String):Dynamic {
 
-        if (o == variables) {
+        var self:Map<String,Dynamic> = locals.get(selfName).r;
+        if (o == self) {
             if (hasGetter(f)) {
-                return variables.get('get_' + f)();
+                if (classInterpreter != null) {
+                    var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+                    return variables.get('get_' + f)(classSelf, self);
+                } else {
+                    return variables.get('get_' + f)(self);
+                }
             }
-            else if (variables.exists(f)) {
-                return variables.get(f);
+            else if (self.exists(f)) {
+                return self.get(f);
             }
             else if (existsAsExtension(f)) {
                 var typePath = dynamicClass.instanceType;
@@ -202,12 +210,13 @@ class Interpreter extends hscript.Interp {
             }
             return null;
         }
-        else if (classInterpreter != null && o == classInterpreter.variables) {
+        var classSelf:Map<String,Dynamic> = classInterpreter != null ? locals.get(classInterpreter.selfName).r : null;
+        if (classSelf != null && o == classSelf) {
             if (classInterpreter.hasGetter(f)) {
-                return classInterpreter.variables.get('get_' + f)();
+                return classInterpreter.variables.get('get_' + f)(classSelf);
             }
-            else if (classInterpreter.variables.exists(f)) {
-                return classInterpreter.variables.get(f);
+            else if (classSelf.exists(f)) {
+                return classSelf.get(f);
             }
             else if (existsAsExtension(f)) {
                 var typePath = dynamicClass.classType;
@@ -262,6 +271,9 @@ class Interpreter extends hscript.Interp {
                     return Reflect.callMethod(o, rawItem, args);
                 case EnumFieldItem(rawItem, _, _):
                     return Reflect.callMethod(o, rawItem, args);
+                case SuperClassItem(ClassItem(rawItem, moduleId, name)):
+                    trace('CALL SUPER.NEW ($name)');
+                    return null;
                 default:
                     throw 'Cannot call module item: ' + f;
             }
@@ -271,19 +283,29 @@ class Interpreter extends hscript.Interp {
 
     override function set(o:Dynamic, f:String, v:Dynamic):Dynamic {
 
-        if (o == variables) {
-            variables.set(f, v);
+        var self:Map<String,Dynamic> = locals.get(selfName).r;
+        if (o == self) {
+            if (hasSetter(f)) {
+                if (classInterpreter != null) {
+                    var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+                    return variables.get('set_' + f)(classSelf, self, v);
+                } else {
+                    return variables.get('set_' + f)(self, v);
+                }
+            }
+            else {
+                self.set(f, v);
+            }
             return v;
         }
-        else if (classInterpreter != null && o == classInterpreter.variables) {
-            classInterpreter.variables.set(f, v);
+        var classSelf:Map<String,Dynamic> = classInterpreter != null ? locals.get(classInterpreter.selfName).r : null;
+        if (classSelf != null && o == classSelf) {
+            if (classInterpreter.hasSetter(f)) {
+                return classInterpreter.variables.get('set_' + f)(classSelf, v);
+            } else {
+                classSelf.set(f, v);
+            }
             return v;
-        }
-        else if (hasSetter(f)) {
-            return variables.get('set_' + f)(v);
-        }
-        else if (classInterpreter != null && classInterpreter.hasSetter(f)) {
-            return classInterpreter.variables.get('set_' + f)(v);
         }
         return super.set(o, f, v);
 

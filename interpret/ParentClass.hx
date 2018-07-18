@@ -6,4 +6,8 @@ class ParentClass {
         trace('HELLO FROM PARENT');
     }
 
+    public static function somParentStaticStuff() {
+        trace('HELLO FROM STATIC PARENT');
+    }
+
 } //ParentClass

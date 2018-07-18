@@ -1,5 +1,6 @@
 package test;
 
+import interpret.ParentClass;
 import interpret.ImportTest;
 import interpret.Types;
 import interpret.Interpretable;
@@ -12,16 +13,31 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
 
     var myName = 'Jean Dupont';
 
+    var nameWithGetSet(get,set):String;
+    function get_nameWithGetSet():String {
+        return 'Unknown';
+    }
+    function set_nameWithGetSet(value:String):String {
+        return 'Did set Unknown';
+    }
+
     public function reload():Void {
         trace('RELOAD');
     }
 
     public function new() {
 
+        super();
+
         trace('Jérémy'.urlEncode());
 
         var chouette = YOUPI('plop');
         trace(chouette);
+
+        trace('myName: ' + myName);
+        trace('this.myName: ' + this.myName);
+        trace('nameWithGetSet: ' + nameWithGetSet);
+        trace('this.nameWithGetSet: ' + this.nameWithGetSet);
 
         trace(interpret.Interpretable);
         trace(interpret.TypeUtils.typeOf(interpret.ParentClass));
@@ -30,11 +46,14 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
         trace('IS ParentClass: ' + Std.is(this, interpret.ParentClass));
 
         someParentStuff();
-
         //trace(ImportTest);
         //ImportTest.hello();
 
     } //new
+
+    public static function someStaticMeth() {
+        ParentClass.somParentStaticStuff();
+    }
 
     public function hello(name:String) {
         trace('hello $name, not $myName');

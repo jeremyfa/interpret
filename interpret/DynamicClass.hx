@@ -16,6 +16,9 @@ import hscript.Parser as HscriptParser;
 @:allow(interpret.TypeUtils)
 class DynamicClass {
 
+    @:noCompletion
+    public static var _contextType:Class<Dynamic> = null;
+
 /// Properties
 
     public var classHscript(default,null):String;
@@ -58,6 +61,8 @@ class DynamicClass {
 
     var classType:String;
 
+    var context:Map<String,Dynamic> = null;
+
 /// Lifecycle
 
     public function new(env:Env, options:DynamicClassOptions) {
@@ -73,7 +78,7 @@ class DynamicClass {
 
     public function createInstance(?args:Array<Dynamic>) {
 
-        if (interpreter == null) initInterpreter();
+        if (interpreter == null) init();
 
         var instance = new DynamicInstance(this);
         instances.push(instance);
@@ -84,7 +89,7 @@ class DynamicClass {
 
     public function get(name:String):Dynamic {
 
-        if (interpreter == null) initInterpreter();
+        if (interpreter == null) init();
 
         return TypeUtils.unwrap(interpreter.resolve(name));
 
@@ -92,7 +97,7 @@ class DynamicClass {
 
     public function call(name:String, args:Array<Dynamic>):Dynamic {
 
-        if (interpreter == null) initInterpreter();
+        if (interpreter == null) init();
 
         var method = interpreter.resolve(name);
         if (method == null) {
@@ -232,7 +237,9 @@ class DynamicClass {
         // Static/Class defaults, to be executed once and
         // then shared by interpreted to all instances
         classResult.add(indent);
-        classResult.add('function __defaults() {\n');
+        classResult.add('function __defaults(');
+        classResult.add(className);
+        classResult.add(') {\n');
         for (item in staticDefaults) {
             classResult.add(indent);
             classResult.add(indent);
@@ -248,7 +255,9 @@ class DynamicClass {
 
         // Instance defaults, to be executed when creating a new instance (calling new())
         instanceResult.add(indent);
-        instanceResult.add('function __defaults() {\n');
+        instanceResult.add('function __defaults(');
+        instanceResult.add(className);
+        instanceResult.add(', this) {\n');
         for (item in defaults) {
             instanceResult.add(indent);
             instanceResult.add(indent);
@@ -277,14 +286,14 @@ class DynamicClass {
                         result.add('function ');
                         result.add(data.name);
                         result.add('(');
-                        /*result.add(className);
+                        result.add(className);
                         if (!isStatic) {
                             result.add(', this');
-                        }*/
+                        }
                         var i = 0;
                         var hasDefaultValues = false;
                         for (arg in data.args) {
-                            if (i > 0) result.add(', ');
+                            result.add(', ');
                             if (arg.opt) {
                                 if (arg.expr != null) hasDefaultValues = true;
                                 result.add('?');
@@ -347,11 +356,17 @@ class DynamicClass {
         Sys.println('-------');
         Sys.println(instanceHscript);
         Sys.println('-------');
-        Sys.exit(0);
 
     } //computeHscript
 
-    function initInterpreter() {
+    function init() {
+
+        trace('INIT CLASS INTERPRETER');
+
+        // Create context
+        context = new Map();
+        context.set('__interpretType', classType);
+        if (_contextType == null) _contextType = Type.getClass(context);
 
         // Create class interpreter
         interpreter = new Interpreter(this, className);
@@ -362,7 +377,7 @@ class DynamicClass {
         // Set all properties to null
         // Will ensure their key exists in variables map
         for (prop in classProperties) {
-            interpreter.variables.set(prop, null);
+            context.set(prop, null);
         }
 
         // Assign getters
@@ -370,12 +385,14 @@ class DynamicClass {
 
         // Generate instance variables
         var __defaults = interpreter.variables.get('__defaults');
-        __defaults();
+        __defaults(context);
 
         // Assign setters
         interpreter.setters = classSetters;
 
-    } //initInterpreter
+        trace('END INIT');
+
+    } //init
 
 } //DynamicClass
 
