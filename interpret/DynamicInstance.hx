@@ -110,7 +110,13 @@ class DynamicInstance {
 
     public function call(name:String, args:Array<Dynamic>):Dynamic {
 
+        var prevSelf = interpreter._self;
+        var prevClassSelf = interpreter._classSelf;
+        interpreter._self = context;
+        interpreter._classSelf = dynamicClass.context;
         var method = interpreter.resolve(name);
+        interpreter._self = prevSelf;
+        interpreter._classSelf = prevClassSelf;
         if (method == null) {
             throw 'Method not found: $name';
         }

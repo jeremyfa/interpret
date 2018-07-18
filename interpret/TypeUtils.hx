@@ -111,7 +111,7 @@ class TypeUtils {
         if (Std.is(value, RuntimeItem)) {
             var item:RuntimeItem = cast value;
             switch (item) {
-                case ExtensionItem(item, _) | SuperClassItem(item) | SuperClassConstructorItem(item):
+                case ExtensionItem(item, _) | SuperClassItem(item):
                     return unwrap(item);
                 case ClassFieldItem(rawItem):
                     return rawItem;

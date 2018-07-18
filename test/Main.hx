@@ -41,6 +41,8 @@ class TestNativeClass implements Interpretable extends ParentClass {
 
     public function new() {
 
+        super();
+
         //trace('Jérémy'.urlEncode());
 
         //var truc = CLASS;

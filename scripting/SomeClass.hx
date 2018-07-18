@@ -45,7 +45,7 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
         trace('IS Interpretable: ' + Std.is(this, interpret.Interpretable));
         trace('IS ParentClass: ' + Std.is(this, interpret.ParentClass));
 
-        someParentStuff();
+        super.someParentStuff();
         //trace(ImportTest);
         //ImportTest.hello();
 
@@ -57,6 +57,17 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
 
     public function hello(name:String) {
         trace('hello $name, not $myName');
+        trace('IS Interpretable: ' + Std.is(this, interpret.Interpretable));
+        trace('IS ParentClass: ' + Std.is(this, interpret.ParentClass));
+        someParentStuff();
+        ParentClass.somParentStaticStuff();
+
+        var someParentProp = 'Jérémy';
+        trace('someParentProp: ' + someParentProp);
+        trace('this.someParentProp: ' + this.someParentProp);
+        someParentProp = 'Jérémy';
+        trace('someParentProp: ' + someParentProp);
+        trace('this.someParentProp: ' + this.someParentProp);
     }
 
     public static function selfHello(value:String) {

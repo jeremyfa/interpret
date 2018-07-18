@@ -27,6 +27,10 @@ class Interpreter extends hscript.Interp {
 
     var dynamicClass:DynamicClass;
 
+    var _self:Map<String,Dynamic> = null;
+
+    var _classSelf:Map<String,Dynamic> = null;
+
 /// Lifecycle
 
     override public function new(dynamicClass:DynamicClass, selfName:String = 'this', ?classInterpreter:Interpreter) {
@@ -86,10 +90,10 @@ class Interpreter extends hscript.Interp {
         if (l != null) {
             return l.r;
         }
-        var self:Map<String,Dynamic> = locals.get(selfName).r;
+        var self:Map<String,Dynamic> = _self != null ? _self : locals.get(selfName).r;
         if (hasGetter(id)) {
             if (classInterpreter != null) {
-                var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+                var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
                 return variables.get('get_' + id)(classSelf, self);
             } else {
                 return variables.get('get_' + id)(self);
@@ -97,6 +101,24 @@ class Interpreter extends hscript.Interp {
         }
         if (self.exists(id)) {
             return self.get(id);
+        }
+        var superInstance = self.get('super');
+        if (superInstance != null) {
+            if (Std.is(superInstance, DynamicInstance)) {
+                // TODO
+            } else {
+                var result = super.get(superInstance, id);
+                if (result != null || Reflect.hasField(superInstance, id) || Reflect.hasField(superInstance, 'get_' + id)) {
+                    if (Reflect.isFunction(result)) {
+                        // Bind superClass context
+                        return Reflect.makeVarArgs(function(args) {
+                            return Reflect.callMethod(superInstance, result, args);
+                        });
+                    } else {
+                        return result;
+                    }
+                }
+            }
         }
         if (variables.exists(id)) {
             return variables.get(id);
@@ -150,15 +172,28 @@ class Interpreter extends hscript.Interp {
 			var l = locals.get(id);
 			if( l == null ) {
                 var self:Map<String,Dynamic> = locals.get(selfName).r;
+                var superInstance = self.get('super');
+                if (superInstance != null) {
+                    if (Std.is(superInstance, DynamicInstance)) {
+                        // TODO
+                    } else {
+                        var result = Reflect.field(superInstance, id);
+                        var setter_result = Reflect.field(superInstance, 'set_' + id);
+                        if (result != null || setter_result != null || Reflect.hasField(superInstance, id) || Reflect.hasField(superInstance, 'set_' + id)) {
+                            Reflect.setProperty(superInstance, id, v);
+                            return v;
+                        }
+                    }
+                }
                 if (hasSetter(id)) {
                     if (classInterpreter != null) {
-                        var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+                        var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
 				        return variables.get('set_' + id)(classSelf, self, v);
                     } else {
 				        return variables.get('set_' + id)(self, v);
                     }
                 } else if (classInterpreter != null && classInterpreter.hasSetter(id)) {
-                    var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+                    var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
 				    return classInterpreter.variables.get('set_' + id)(classSelf, v);
                 } else {
 				    //variables.set(id,v); // TODO forbid this or not?
@@ -188,11 +223,11 @@ class Interpreter extends hscript.Interp {
 
     override function get(o:Dynamic, f:String):Dynamic {
 
-        var self:Map<String,Dynamic> = locals.get(selfName).r;
+        var self:Map<String,Dynamic> = _self != null ? _self : locals.get(selfName).r;
         if (o == self) {
             if (hasGetter(f)) {
                 if (classInterpreter != null) {
-                    var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+                    var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
                     return variables.get('get_' + f)(classSelf, self);
                 } else {
                     return variables.get('get_' + f)(self);
@@ -201,7 +236,18 @@ class Interpreter extends hscript.Interp {
             else if (self.exists(f)) {
                 return self.get(f);
             }
-            else if (existsAsExtension(f)) {
+            var superInstance = self.get('super');
+            if (superInstance != null) {
+                if (Std.is(superInstance, DynamicInstance)) {
+                    // TODO
+                } else {
+                    var result = super.get(superInstance, f);
+                    if (result != null || Reflect.hasField(superInstance, f) || Reflect.hasField(superInstance, 'get_' + f)) {
+                        return result;
+                    }
+                }
+            }
+            if (existsAsExtension(f)) {
                 var typePath = dynamicClass.instanceType;
                 var resolved = dynamicClass.usings.resolve(typePath, f);
                 if (resolved != null) {
@@ -210,7 +256,7 @@ class Interpreter extends hscript.Interp {
             }
             return null;
         }
-        var classSelf:Map<String,Dynamic> = classInterpreter != null ? locals.get(classInterpreter.selfName).r : null;
+        var classSelf:Map<String,Dynamic> = classInterpreter != null ? (_classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r) : null;
         if (classSelf != null && o == classSelf) {
             if (classInterpreter.hasGetter(f)) {
                 return classInterpreter.variables.get('get_' + f)(classSelf);
@@ -266,14 +312,28 @@ class Interpreter extends hscript.Interp {
         if (Std.is(f, RuntimeItem)) {
             switch (f) {
                 case ExtensionItem(ClassFieldItem(rawItem), _):
+                    if (Std.is(rawItem, DynamicClass)) {
+                        return null; // TODO
+                    }
                     return Reflect.callMethod(null, rawItem, [o].concat(args));
                 case ClassFieldItem(rawItem):
+                    if (Std.is(rawItem, DynamicClass)) {
+                        return null; // TODO
+                    }
                     return Reflect.callMethod(o, rawItem, args);
                 case EnumFieldItem(rawItem, _, _):
+                    if (Std.is(rawItem, DynamicClass)) {
+                        return null; // TODO
+                    }
                     return Reflect.callMethod(o, rawItem, args);
                 case SuperClassItem(ClassItem(rawItem, moduleId, name)):
-                    trace('CALL SUPER.NEW ($name)');
-                    return null;
+                    if (Std.is(rawItem, DynamicClass)) {
+                        return null; // TODO
+                    }
+                    var self:Map<String,Dynamic> = locals.get(selfName).r;
+                    var instance = Type.createInstance(rawItem, args);
+                    self.set('super', instance);
+                    return instance;
                 default:
                     throw 'Cannot call module item: ' + f;
             }
@@ -283,11 +343,11 @@ class Interpreter extends hscript.Interp {
 
     override function set(o:Dynamic, f:String, v:Dynamic):Dynamic {
 
-        var self:Map<String,Dynamic> = locals.get(selfName).r;
+        var self:Map<String,Dynamic> = _self != null ? _self : locals.get(selfName).r;
         if (o == self) {
             if (hasSetter(f)) {
                 if (classInterpreter != null) {
-                    var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
+                    var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
                     return variables.get('set_' + f)(classSelf, self, v);
                 } else {
                     return variables.get('set_' + f)(self, v);
@@ -298,7 +358,7 @@ class Interpreter extends hscript.Interp {
             }
             return v;
         }
-        var classSelf:Map<String,Dynamic> = classInterpreter != null ? locals.get(classInterpreter.selfName).r : null;
+        var classSelf:Map<String,Dynamic> = classInterpreter != null ? (_classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r) : null;
         if (classSelf != null && o == classSelf) {
             if (classInterpreter.hasSetter(f)) {
                 return classInterpreter.variables.get('set_' + f)(classSelf, v);
