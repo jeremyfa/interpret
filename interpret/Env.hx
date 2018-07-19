@@ -28,6 +28,9 @@ class Env {
     /** Internal map of classes and the interfaces they implement (if any) */
     var interfaces:Map<String,Map<String,Bool>> = new Map();
 
+    /** Resolved dynamic classes */
+    var resolvedDynamicClasses:Map<String,DynamicClass> = new Map();
+
     public function new() {
 
     } //new
@@ -114,6 +117,41 @@ class Env {
 
     } //getInterfaces
 
+    public function resolveDynamicClass(moduleId:Int, name:String):DynamicClass {
+
+        var resolved = resolvedDynamicClasses.get(name);
+        if (resolved != null || resolvedDynamicClasses.exists(name)) return resolved;
+
+        var module = modulesById.get(moduleId);
+        if (module != null) {
+            var className = name;
+            if (module.pack != null && module.pack != '') {
+                className = className.substring(module.pack.length + 1);
+            }
+            var dynClass = module.dynamicClasses.get(className);
+            if (dynClass != null) {
+                resolvedDynamicClasses.set(name, dynClass);
+                return dynClass;
+            }
+            var alias =aliases.get(name);
+            if (alias != null) {
+                className = alias;
+                if (module.pack != null && module.pack != '') {
+                    className = className.substring(module.pack.length + 1);
+                }
+                dynClass = module.dynamicClasses.get(alias);
+                if (dynClass != null) {
+                    resolvedDynamicClasses.set(name, dynClass);
+                    return dynClass;
+                }
+            }
+        }
+
+        resolvedDynamicClasses.set(name, null);
+        return null;
+
+    } //resolveDynamicClass
+
     /** Load script code for the given class.
         This will update the code of any living instance
         as well as the newly created ones. */
@@ -126,6 +164,8 @@ class Env {
     /** Like Std.is(), but accepts dynamic/scriptable types as well. */
     public function is(v:Dynamic, t:Dynamic):Bool {
 
+        trace('this = $this');
+
         // Unwrap v & t if needed
         v = TypeUtils.unwrap(v);
         t = TypeUtils.unwrap(t);
@@ -135,7 +175,7 @@ class Env {
             vType = v.get('__interpretType');
         }
         if (Std.is(t, DynamicClass)) {
-            tClassType = TypeUtils.typeOf(t);
+            tClassType = TypeUtils.typeOf(t, this);
         }
         if (vType == null && tClassType == null) {
             // Nothing dynamic, use standard Std.is()
@@ -260,5 +300,13 @@ class Env {
         }
 
     } //extractModuleInfo
+
+/// Print
+
+    public function toString() {
+
+        return 'Env()';
+
+    } //toString
 
 } //Env

@@ -27,8 +27,6 @@ class Interpreter extends hscript.Interp {
 
     var dynamicClass:DynamicClass;
 
-    var resolvedDynamicClasses:Map<String,DynamicClass> = new Map();
-
     var _self:Map<String,Dynamic> = null;
 
     var _classSelf:Map<String,Dynamic> = null;
@@ -282,7 +280,18 @@ class Interpreter extends hscript.Interp {
                     return super.get(rawItem, f);
                 case ClassItem(rawItem, moduleId, name):
                     var module = @:privateAccess env.modulesById.get(moduleId);
-                    return unwrap(module.items.get(name + '.' + f));
+                    var key = name + '.' + f;
+                    if (module.items.exists(key)) {
+                        return unwrap(module.items.get(name + '.' + f));
+                    }
+                    else if (existsAsExtension(f)) {
+                        var typePath = TypeUtils.typeOf(o, env);
+                        var resolved = dynamicClass.usings.resolve(typePath, f);
+                        if (resolved != null) {
+                            return resolved;
+                        }
+                    }
+                    return null;
                 case EnumItem(rawItem, moduleId, name):
                     var module = @:privateAccess env.modulesById.get(moduleId);
                     var resolved = module.items.get(name + '.' + f);
@@ -299,8 +308,12 @@ class Interpreter extends hscript.Interp {
                     return null;
             }
         }
+        else if (Std.is(o, DynamicInstance)) {
+            trace('DYN INST -> $o . $f');
+            return null;
+        }
         else if (existsAsExtension(f)) {
-            var typePath = TypeUtils.typeOf(o);
+            var typePath = TypeUtils.typeOf(o, env);
             var resolved = dynamicClass.usings.resolve(typePath, f);
             if (resolved != null) {
                 return resolved;
@@ -345,7 +358,7 @@ class Interpreter extends hscript.Interp {
             switch (f) {
                 case ExtensionItem(ClassFieldItem(rawItem, moduleId, name), _):
                     if (rawItem == null) {
-                        var dynClass = resolveDynamicClass(moduleId, name);
+                        var dynClass = env.resolveDynamicClass(moduleId, name);
                         if (dynClass != null) {
                             trace('CALL DYN CLASS EXT');
                         }
@@ -353,7 +366,7 @@ class Interpreter extends hscript.Interp {
                     return Reflect.callMethod(null, rawItem, [o].concat(args));
                 case ClassFieldItem(rawItem, moduleId, name):
                     if (rawItem == null) {
-                        var dynClass = resolveDynamicClass(moduleId, name);
+                        var dynClass = env.resolveDynamicClass(moduleId, name);
                         if (dynClass != null) {
                             trace('CALL DYN CLASS METHOD');
                         }
@@ -375,6 +388,9 @@ class Interpreter extends hscript.Interp {
                 default:
                     throw 'Cannot call module item: ' + f;
             }
+        }
+        else if (Std.is(o, DynamicInstance)) {
+            trace('CALL DYN INST $o $f $args');
         }
         return super.call(o, f, args);
     }
@@ -415,7 +431,7 @@ class Interpreter extends hscript.Interp {
                     return rawItem;
                 case ClassItem(rawItem, moduleId, name):
                     if (rawItem == null) {
-                        var dynClass = resolveDynamicClass(moduleId, name);
+                        var dynClass = env.resolveDynamicClass(moduleId, name);
                         if (dynClass != null) return dynClass;
                     }
                     return rawItem;
@@ -427,40 +443,5 @@ class Interpreter extends hscript.Interp {
         return value;
 
     } //unwrap
-
-    function resolveDynamicClass(moduleId:Int, name:String):DynamicClass {
-
-        var resolved = resolvedDynamicClasses.get(name);
-        if (resolved != null || resolvedDynamicClasses.exists(name)) return resolved;
-
-        var module = env.modulesById.get(moduleId);
-        if (module != null) {
-            var className = name;
-            if (module.pack != null && module.pack != '') {
-                className = className.substring(module.pack.length + 1);
-            }
-            var dynClass = module.dynamicClasses.get(className);
-            if (dynClass != null) {
-                resolvedDynamicClasses.set(name, dynClass);
-                return dynClass;
-            }
-            var alias = env.aliases.get(name);
-            if (alias != null) {
-                className = alias;
-                if (module.pack != null && module.pack != '') {
-                    className = className.substring(module.pack.length + 1);
-                }
-                dynClass = module.dynamicClasses.get(alias);
-                if (dynClass != null) {
-                    resolvedDynamicClasses.set(name, dynClass);
-                    return dynClass;
-                }
-            }
-        }
-
-        resolvedDynamicClasses.set(name, null);
-        return null;
-
-    } //DynamicClass
 
 } //Interp

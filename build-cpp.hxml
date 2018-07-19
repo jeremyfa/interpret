@@ -3,6 +3,5 @@
 -cp .
 -debug
 -D interpretable
--D hscriptPos
 -dce no
 -cpp bin

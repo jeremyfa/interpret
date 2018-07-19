@@ -52,6 +52,8 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
 
         var otherInstance = new SomeOtherClass();
 
+        otherInstance.hello();
+
     } //new
 
     public static function someStaticMeth() {

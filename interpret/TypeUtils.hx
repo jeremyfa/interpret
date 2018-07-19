@@ -7,7 +7,7 @@ using StringTools;
 class TypeUtils {
 
     /** Return a type string (with dot path if any) from the given object */
-    public static function typeOf(obj:Dynamic):String {
+    public static function typeOf(obj:Dynamic, ?env:Env):String {
 
         if (Std.is(obj, String)) return 'String';
         if (Std.is(obj, Int)) return 'Int';
@@ -26,6 +26,7 @@ class TypeUtils {
         }
 
         if (Std.is(obj, RuntimeItem)) {
+            // TODO resolve dynamic classes
             var item:RuntimeItem = cast obj;
             switch (item) {
                 case ExtensionItem(item, extendedType):
@@ -107,6 +108,8 @@ class TypeUtils {
     public static function unwrap(value:Dynamic):Dynamic {
 
         if (value == null) return null;
+
+        // TODO resolve dynamic classes
 
         if (Std.is(value, RuntimeItem)) {
             var item:RuntimeItem = cast value;
