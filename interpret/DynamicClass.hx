@@ -352,16 +352,9 @@ class DynamicClass {
         classProgram = parser.parseString(classHscript);
         instanceProgram = parser.parseString(instanceHscript);
 
-        Sys.println(classHscript);
-        Sys.println('-------');
-        Sys.println(instanceHscript);
-        Sys.println('-------');
-
     } //computeHscript
 
     function init() {
-
-        trace('INIT CLASS INTERPRETER');
 
         // Create context
         context = new Map();
@@ -390,9 +383,15 @@ class DynamicClass {
         // Assign setters
         interpreter.setters = classSetters;
 
-        trace('END INIT');
-
     } //init
+
+/// Print
+
+    public function toString() {
+
+        return 'DynamicClass($instanceType)';
+
+    } //toString
 
 } //DynamicClass
 

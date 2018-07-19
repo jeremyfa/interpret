@@ -24,7 +24,7 @@ enum RuntimeItem {
 
     ExtensionItem(item:RuntimeItem, ?extendedType:String);
 
-    ClassFieldItem(rawItem:Dynamic);
+    ClassFieldItem(rawItem:Dynamic, moduleId:Int, name:String);
 
     ClassItem(rawItem:Dynamic, moduleId:Int, name:String);
 

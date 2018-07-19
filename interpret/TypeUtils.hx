@@ -30,7 +30,7 @@ class TypeUtils {
             switch (item) {
                 case ExtensionItem(item, extendedType):
                     return typeOf(item);
-                case ClassFieldItem(rawItem):
+                case ClassFieldItem(rawItem, _, _):
                     return typeOf(rawItem);
                 case ClassItem(rawItem, moduleId, name):
                     return 'Class<' + name + '>';
@@ -113,7 +113,7 @@ class TypeUtils {
             switch (item) {
                 case ExtensionItem(item, _) | SuperClassItem(item):
                     return unwrap(item);
-                case ClassFieldItem(rawItem):
+                case ClassFieldItem(rawItem, _, _):
                     return rawItem;
                 case ClassItem(rawItem, _, _):
                     return rawItem;

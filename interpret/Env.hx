@@ -13,7 +13,8 @@ class Env {
     public var aliases(default,null) = new Map<String,String>();
 
     /** Internal map of modules */
-    var modulesById:Map<Int,DynamicModule> = new Map();
+    @:noCompletion
+    public var modulesById:Map<Int,DynamicModule> = new Map();
 
     /** Internal map of packages */
     var packs:Map<String,DynamicPackage> = new Map();
@@ -31,12 +32,35 @@ class Env {
 
     } //new
 
+    public function link() {
+
+        var allOnLink = [];
+
+        for (module in modules) {
+            if (module.onLink != null) {
+                var onLink = module.onLink;
+                module.onLink = null;
+                allOnLink.push(onLink);
+            }
+        }
+
+        for (onLink in allOnLink) {
+            onLink();
+        }
+
+        // Extract updated module info
+        for (module in modules) {
+            extractModuleInfo(module);
+        }
+
+    } //link
+
     public function addDefaultModules() {
 
         var stdModule:DynamicModule = DynamicModule.fromStatic(Std);
 
         // Patch Std.is to work in scripting env
-        stdModule.items.set('Std.is', ClassFieldItem(is));
+        stdModule.items.set('Std.is', ClassFieldItem(is, stdModule.id, 'Std.is'));
 
         addModule('Std', stdModule);
 
@@ -48,53 +72,10 @@ class Env {
         modulesById.set(@:privateAccess module.id, module);
         modules.set(typePath, module);
 
-        // Update available root packs
-        if (module.pack != null) {
-            var parts = module.pack.split('.');
-            availablePacks.set(parts[0], true);
-        }
+        // Set name if not any provided
+        if (module.typePath == null) module.typePath = typePath;
 
-        // Update aliases
-        if (module.aliases != null) {
-            for (key in module.aliases.keys()) {
-                var val = module.aliases.get(key);
-                if (!aliases.exists(key)) {
-                    aliases.set(key, val);
-                }
-                if (!aliases.exists(val)) {
-                    aliases.set(val, key);
-                }
-            }
-        }
-
-        // Update superclasses
-        if (module.superClasses != null) {
-            for (key in module.superClasses.keys()) {
-                var val = module.superClasses.get(key);
-                if (!superClasses.exists(key)) {
-                    superClasses.set(key, val);
-                }
-            }
-        }
-
-        // Update interfaces
-        if (module.interfaces != null) {
-            for (key in module.interfaces.keys()) {
-                var subItems = module.interfaces.get(key);
-                var envSubItems = interfaces.get(key);
-                if (envSubItems == null) {
-                    var aliasKey = aliases.get(key);
-                    envSubItems = interfaces.get(aliasKey);
-                    if (envSubItems == null) {
-                        envSubItems = new Map();
-                        interfaces.set(key, envSubItems);
-                    }
-                }
-                for (subKey in subItems.keys()) {
-                    envSubItems.set(subKey, true);
-                }
-            }
-        }
+        extractModuleInfo(module);
 
     } //addModule
 
@@ -179,6 +160,8 @@ class Env {
 
     function isKindOf(vType:String, tType:String):Bool {
 
+        trace('IS KIND OF $vType $tType');
+
         var tAlias = aliases.get(tType);
         var vActive = vType;
         
@@ -198,6 +181,7 @@ class Env {
             var interfaces = getInterfaces(vActive);
             if (interfaces != null) {
                 for (item in interfaces.keys()) {
+                    trace('TRY INTERFACE $item');
                     var iActive = item;
                     while (iActive != null) {
 
@@ -224,5 +208,57 @@ class Env {
         return false;
 
     } //isKindOf
+
+    function extractModuleInfo(module:DynamicModule):Void {
+
+        // Update available root packs
+        if (module.pack != null) {
+            var parts = module.pack.split('.');
+            availablePacks.set(parts[0], true);
+        }
+
+        // Update aliases
+        if (module.aliases != null) {
+            for (key in module.aliases.keys()) {
+                var val = module.aliases.get(key);
+                if (!aliases.exists(key)) {
+                    aliases.set(key, val);
+                }
+                if (!aliases.exists(val)) {
+                    aliases.set(val, key);
+                }
+            }
+        }
+
+        // Update superclasses
+        if (module.superClasses != null) {
+            for (key in module.superClasses.keys()) {
+                var val = module.superClasses.get(key);
+                if (!superClasses.exists(key)) {
+                    superClasses.set(key, val);
+                }
+            }
+        }
+
+        // Update interfaces
+        if (module.interfaces != null) {
+            for (key in module.interfaces.keys()) {
+                var subItems = module.interfaces.get(key);
+                var envSubItems = interfaces.get(key);
+                if (envSubItems == null) {
+                    var aliasKey = aliases.get(key);
+                    envSubItems = interfaces.get(aliasKey);
+                    if (envSubItems == null) {
+                        envSubItems = new Map();
+                        interfaces.set(key, envSubItems);
+                    }
+                }
+                for (subKey in subItems.keys()) {
+                    envSubItems.set(subKey, true);
+                }
+            }
+        }
+
+    } //extractModuleInfo
 
 } //Env

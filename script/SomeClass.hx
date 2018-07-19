@@ -1,9 +1,10 @@
-package test;
+package script;
 
 import interpret.ParentClass;
 import interpret.ImportTest;
 import interpret.Types;
 import interpret.Interpretable;
+import script.SomeOtherClass;
 //import interpret.*;
 
 using StringTools;
@@ -48,6 +49,8 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
         super.someParentStuff();
         //trace(ImportTest);
         //ImportTest.hello();
+
+        var otherInstance = new SomeOtherClass();
 
     } //new
 

@@ -27,6 +27,8 @@ class Interpreter extends hscript.Interp {
 
     var dynamicClass:DynamicClass;
 
+    var resolvedDynamicClasses:Map<String,DynamicClass> = new Map();
+
     var _self:Map<String,Dynamic> = null;
 
     var _classSelf:Map<String,Dynamic> = null;
@@ -276,7 +278,7 @@ class Interpreter extends hscript.Interp {
         else if (Std.is(o, RuntimeItem)) {
             var moduleItem:RuntimeItem = cast o;
             switch (moduleItem) {
-                case ClassFieldItem(rawItem) | ExtensionItem(ClassFieldItem(rawItem), _):
+                case ClassFieldItem(rawItem, _, _) | ExtensionItem(ClassFieldItem(rawItem, _, _), _):
                     return super.get(rawItem, f);
                 case ClassItem(rawItem, moduleId, name):
                     var module = @:privateAccess env.modulesById.get(moduleId);
@@ -308,39 +310,6 @@ class Interpreter extends hscript.Interp {
 
     } //get
 
-    override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic {
-        if (Std.is(f, RuntimeItem)) {
-            switch (f) {
-                case ExtensionItem(ClassFieldItem(rawItem), _):
-                    if (Std.is(rawItem, DynamicClass)) {
-                        return null; // TODO
-                    }
-                    return Reflect.callMethod(null, rawItem, [o].concat(args));
-                case ClassFieldItem(rawItem):
-                    if (Std.is(rawItem, DynamicClass)) {
-                        return null; // TODO
-                    }
-                    return Reflect.callMethod(o, rawItem, args);
-                case EnumFieldItem(rawItem, _, _):
-                    if (Std.is(rawItem, DynamicClass)) {
-                        return null; // TODO
-                    }
-                    return Reflect.callMethod(o, rawItem, args);
-                case SuperClassItem(ClassItem(rawItem, moduleId, name)):
-                    if (Std.is(rawItem, DynamicClass)) {
-                        return null; // TODO
-                    }
-                    var self:Map<String,Dynamic> = locals.get(selfName).r;
-                    var instance = Type.createInstance(rawItem, args);
-                    self.set('super', instance);
-                    return instance;
-                default:
-                    throw 'Cannot call module item: ' + f;
-            }
-        }
-        return super.call(o, f, args);
-    }
-
     override function set(o:Dynamic, f:String, v:Dynamic):Dynamic {
 
         var self:Map<String,Dynamic> = _self != null ? _self : locals.get(selfName).r;
@@ -371,7 +340,60 @@ class Interpreter extends hscript.Interp {
 
     } //set
 
-    inline function unwrap(value:Dynamic):Dynamic {
+    override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic {
+        if (Std.is(f, RuntimeItem)) {
+            switch (f) {
+                case ExtensionItem(ClassFieldItem(rawItem, moduleId, name), _):
+                    if (rawItem == null) {
+                        var dynClass = resolveDynamicClass(moduleId, name);
+                        if (dynClass != null) {
+                            trace('CALL DYN CLASS EXT');
+                        }
+                    }
+                    return Reflect.callMethod(null, rawItem, [o].concat(args));
+                case ClassFieldItem(rawItem, moduleId, name):
+                    if (rawItem == null) {
+                        var dynClass = resolveDynamicClass(moduleId, name);
+                        if (dynClass != null) {
+                            trace('CALL DYN CLASS METHOD');
+                        }
+                    }
+                    return Reflect.callMethod(o, rawItem, args);
+                case EnumFieldItem(rawItem, _, _):
+                    if (Std.is(rawItem, DynamicClass)) {
+                        return null; // TODO
+                    }
+                    return Reflect.callMethod(o, rawItem, args);
+                case SuperClassItem(ClassItem(rawItem, moduleId, name)):
+                    if (Std.is(rawItem, DynamicClass)) {
+                        return null; // TODO
+                    }
+                    var self:Map<String,Dynamic> = locals.get(selfName).r;
+                    var instance = Type.createInstance(rawItem, args);
+                    self.set('super', instance);
+                    return instance;
+                default:
+                    throw 'Cannot call module item: ' + f;
+            }
+        }
+        return super.call(o, f, args);
+    }
+
+    override function cnew(cl:String, args:Array<Dynamic>):Dynamic {
+
+        var clazz = resolve(cl);
+
+        // Dynamic class?
+        if (Std.is(clazz, DynamicClass)) {
+            var dynClass:DynamicClass = cast clazz;
+            return dynClass.createInstance(args);
+        }
+
+        return super.cnew(cl, args);
+
+    } //cnew
+
+    function unwrap(value:Dynamic):Dynamic {
 
         if (value == null) return null;
 
@@ -382,14 +404,20 @@ class Interpreter extends hscript.Interp {
                     // We ensure this won't be considered as an extension item
                     // but just a regular field
                     switch (subItem) {
-                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
+                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem, _, _):
                             // Unwrap
                             return rawItem;
                         default:
                             return subItem;
                     }
-                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem):
+                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassFieldItem(rawItem, _, _):
                     // Unwrap
+                    return rawItem;
+                case ClassItem(rawItem, moduleId, name):
+                    if (rawItem == null) {
+                        var dynClass = resolveDynamicClass(moduleId, name);
+                        if (dynClass != null) return dynClass;
+                    }
                     return rawItem;
                 default:
                     return value;
@@ -399,5 +427,40 @@ class Interpreter extends hscript.Interp {
         return value;
 
     } //unwrap
+
+    function resolveDynamicClass(moduleId:Int, name:String):DynamicClass {
+
+        var resolved = resolvedDynamicClasses.get(name);
+        if (resolved != null || resolvedDynamicClasses.exists(name)) return resolved;
+
+        var module = env.modulesById.get(moduleId);
+        if (module != null) {
+            var className = name;
+            if (module.pack != null && module.pack != '') {
+                className = className.substring(module.pack.length + 1);
+            }
+            var dynClass = module.dynamicClasses.get(className);
+            if (dynClass != null) {
+                resolvedDynamicClasses.set(name, dynClass);
+                return dynClass;
+            }
+            var alias = env.aliases.get(name);
+            if (alias != null) {
+                className = alias;
+                if (module.pack != null && module.pack != '') {
+                    className = className.substring(module.pack.length + 1);
+                }
+                dynClass = module.dynamicClasses.get(alias);
+                if (dynClass != null) {
+                    resolvedDynamicClasses.set(name, dynClass);
+                    return dynClass;
+                }
+            }
+        }
+
+        resolvedDynamicClasses.set(name, null);
+        return null;
+
+    } //DynamicClass
 
 } //Interp

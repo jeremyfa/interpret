@@ -1190,6 +1190,7 @@ class ConvertHaxe {
         'public' => true,
         'protected' => true,
         'dynamic' => true,
+        'override' => true,
         'private' => true
     ];
 

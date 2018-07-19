@@ -3,6 +3,7 @@
 -cp .
 -debug
 -D interpretable
+-D hscriptPos
 -dce no
 -lib hxnodejs
 -js main.js

@@ -33,6 +33,8 @@ class DynamicInstance {
         // Create instance context
         context = new Map();
         context.set('__interpretType', dynamicClass.instanceType);
+        context.set('__interpretInstance', this);
+        context.set('__interpretClass', dynamicClass);
         _contextArgs = [dynamicClass.context, context];
 
         // Create class interpreter and feed it with our program
@@ -92,6 +94,8 @@ class DynamicInstance {
             }
         }
 
+        trace(interpreter.variables);
+
         // Call new()
         var _new = interpreter.variables.get('new');
         if (_new != null) {
@@ -123,5 +127,13 @@ class DynamicInstance {
         return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? _contextArgs.concat(args) : _contextArgs));
 
     } //call
+
+/// Print
+
+    public function toString() {
+
+        return 'DynamicInstance(${dynamicClass.instanceType})';
+
+    } //toString
 
 } //DynamicInstance

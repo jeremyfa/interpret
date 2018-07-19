@@ -19,7 +19,7 @@ class DynamicModule {
 
 /// Properties
 
-    var id:Int = _nextId++;
+    public var id(default,null):Int = _nextId++;
 
     public var items(get,null):Map<String,RuntimeItem> = null;
     function get_items():Map<String,RuntimeItem> {
@@ -46,6 +46,9 @@ class DynamicModule {
     @:noCompletion
     public var lazyLoad:DynamicModule->Void = null;
 
+    @:noCompletion
+    public var onLink:Void->Void = null;
+
     /** Internal map of classes and the superclass they extend (if any) */
     @:noCompletion
     public var superClasses:Map<String,String> = new Map();
@@ -53,6 +56,8 @@ class DynamicModule {
     /** Internal map of classes and the interfaces they implement (if any) */
     @:noCompletion
     public var interfaces:Map<String,Map<String,Bool>> = new Map();
+
+    public var typePath:String = null;
 
 /// Lifecycle
 
@@ -72,9 +77,9 @@ class DynamicModule {
             case ModuleItemKind.CLASS_FIELD:
                 var extendedType:String = extra;
                 if (extendedType != null) {
-                    items.set(name, ExtensionItem(ClassFieldItem(rawItem), extendedType));
+                    items.set(name, ExtensionItem(ClassFieldItem(rawItem, id, name), extendedType));
                 } else {
-                    items.set(name, ClassFieldItem(rawItem));
+                    items.set(name, ClassFieldItem(rawItem, id, name));
                 }
             case ModuleItemKind.ENUM:
                 items.set(name, EnumItem(rawItem, id, name));
@@ -121,81 +126,95 @@ class DynamicModule {
         var module = new DynamicModule();
         module.dynamicClasses = new Map();
 
-        var currentClassPath:String = null;
-        var dynClass:DynamicClass = null;
-        var modifiers = new Map<String,Bool>();
-        var packagePrefix:String = '';
-
         module.imports = new ResolveImports(env);
         module.usings = new ResolveUsings(env);
 
-        for (token in converter.tokens) {
-            switch (token) {
+        function consumeTokens(shallow:Bool) {
 
-                case TPackage(data):
-                    module.pack = data.path;
-                    packagePrefix = data.path != null && data.path != '' ? data.path + '.' : '';
-            
-                case TImport(data):
-                    module.imports.addImport(data);
+            Sys.println('CONSUME shallow=$shallow');
+
+            var currentClassPath:String = null;
+            var dynClass:DynamicClass = null;
+            var modifiers = new Map<String,Bool>();
+            var packagePrefix:String = '';
+
+            for (token in converter.tokens) {
+                switch (token) {
+
+                    case TPackage(data):
+                        module.pack = data.path;
+                        packagePrefix = data.path != null && data.path != '' ? data.path + '.' : '';
                 
-                case TUsing(data):
-                    module.usings.addUsing(data);
+                    case TImport(data):
+                        if (shallow) continue;
+                        module.imports.addImport(data);
+                    
+                    case TUsing(data):
+                        if (shallow) continue;
+                        module.usings.addUsing(data);
 
-                case TModifier(data):
-                    modifiers.set(data.name, true);
+                    case TModifier(data):
+                        modifiers.set(data.name, true);
 
-                case TType(data):
-                    if (data.kind == CLASS) {
-                        dynClass = new DynamicClass(env, {
-                            tokens: converter.tokens,
-                            targetClass: data.name
-                        });
-                        module.dynamicClasses.set(data.name, dynClass);
-                        currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
-                        module.add(currentClassPath, dynClass, ModuleItemKind.CLASS, null);
-                        if (data.parent != null) {
-                            module.addSuperClass(currentClassPath, TypeUtils.toResolvedType(module.imports, data.parent.name));
-                        }
-                        if (data.interfaces != null) {
-                            for (item in data.interfaces) {
-                                module.addInterface(currentClassPath, TypeUtils.toResolvedType(module.imports, item.name));
-                            }
-                        }
-                    }
-                    else {
-                        currentClassPath = null;
-                        dynClass = null;
-                    }
-                    // Reset modifiers
-                    modifiers = new Map<String,Bool>();
-                
-                case TField(data):
-                    if (currentClassPath != null) {
-                        if (modifiers.exists('static')) {
-                            if (data.kind == VAR) {
-                                module.add(currentClassPath + '.' + data.name, dynClass, ModuleItemKind.CLASS, null);
-                            }
-                            else if (data.kind == METHOD) {
-                                var extendedType = null;
-                                if (data.args.length > 0) {
-                                    var firstArg = data.args[0];
-                                    if (firstArg.type != null) {
-                                        extendedType = firstArg.type;
+                    case TType(data):
+                        if (data.kind == CLASS) {
+                            dynClass = shallow ? null : new DynamicClass(env, {
+                                tokens: converter.tokens,
+                                targetClass: data.name
+                            });
+                            if (!shallow) module.dynamicClasses.set(data.name, dynClass);
+                            currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
+                            module.add(currentClassPath, null, ModuleItemKind.CLASS, null);
+                            if (!shallow) {
+                                if (data.parent != null) {
+                                    module.addSuperClass(currentClassPath, TypeUtils.toResolvedType(module.imports, data.parent.name));
+                                }
+                                if (data.interfaces != null) {
+                                    for (item in data.interfaces) {
+                                        module.addInterface(currentClassPath, TypeUtils.toResolvedType(module.imports, item.name));
                                     }
                                 }
-                                if (extendedType != null) {
-                                    extendedType = TypeUtils.toResolvedType(module.imports, extendedType);
-                                }
-                                module.add(currentClassPath + '.' + data.name, dynClass, ModuleItemKind.CLASS_FIELD, extendedType);
                             }
                         }
-                    }
+                        else {
+                            currentClassPath = null;
+                            dynClass = null;
+                        }
+                        // Reset modifiers
+                        modifiers = new Map<String,Bool>();
+                    
+                    case TField(data):
+                        if (currentClassPath != null) {
+                            if (modifiers.exists('static')) {
+                                if (data.kind == VAR) {
+                                    module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_FIELD, null);
+                                }
+                                else if (data.kind == METHOD) {
+                                    var extendedType = null;
+                                    if (data.args.length > 0) {
+                                        var firstArg = data.args[0];
+                                        if (firstArg.type != null) {
+                                            extendedType = firstArg.type;
+                                        }
+                                    }
+                                    if (extendedType != null) {
+                                        extendedType = TypeUtils.toResolvedType(module.imports, extendedType);
+                                    }
+                                    module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_FIELD, extendedType);
+                                }
+                            }
+                        }
+                    
+                    default:
                 
-                default:
-            
+                }
             }
         }
+
+        consumeTokens(true);
+        module.onLink = function() {
+            consumeTokens(false);
+        };
 
         return module;
 
@@ -378,5 +397,13 @@ class DynamicModule {
         return result;
 
     } //fromStatic
+
+/// Print
+
+    public function toString() {
+
+        return 'DynamicModule($typePath)';
+
+    } //toString
 
 } //DynamicModule

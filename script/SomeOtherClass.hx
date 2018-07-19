@@ -1,4 +1,4 @@
-package test;
+package script;
 
 /** Some scriptable class */
 class SomeOtherClass implements interpret.Interpretable {
@@ -11,7 +11,7 @@ class SomeOtherClass implements interpret.Interpretable {
 
     public function new() {
 
-        trace('new OtherClass()');
+        trace('new OtherClass() !!! ' + this);
 
     } //new
 

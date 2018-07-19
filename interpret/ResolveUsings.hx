@@ -50,7 +50,7 @@ class ResolveUsings {
         for (itemPath in resolvedModule.items.keys()) {
             var item:RuntimeItem = resolvedModule.items.get(itemPath);
             switch (item) {
-                case ExtensionItem(ClassFieldItem(rawItem), extendedType):
+                case ExtensionItem(ClassFieldItem(rawItem, _, _), extendedType):
                     if (itemPath.startsWith(prefix)) {
                         var itemParts = itemPath.split('.');
                         if (itemParts.length == parts.length + 1) {

@@ -103,28 +103,31 @@ class Main {
         return;
         //*/
 
-        // Load haxe content
-        var content = File.getContent('scripting/SomeClass.hx');
-
         // Create env
         var env = new Env();
         env.addDefaultModules();
         //env.allowPackage('interpret');
 
+        // Modules from static (native) code
         env.addModule('interpret.ImportTest', DynamicModule.fromStatic(interpret.ImportTest));
         env.addModule('interpret.Types', DynamicModule.fromStatic(interpret.Types));
         env.addModule('interpret.Interpretable', DynamicModule.fromStatic(interpret.Interpretable));
         env.addModule('interpret.TypeUtils', DynamicModule.fromStatic(interpret.TypeUtils));
         env.addModule('interpret.SomClassWithParent', DynamicModule.fromStatic(interpret.SomeClassWithParent));
         env.addModule('interpret.ParentClass', DynamicModule.fromStatic(interpret.ParentClass));
-        
         env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
 
-        env.addModule('test.SomeClass', DynamicModule.fromString(env, 'SomeClass', content));
+        // Modules from interpreted code
+        env.addModule('script.SomeClass', DynamicModule.fromString(env, 'SomeClass', File.getContent('script/SomeClass.hx')));
+        env.addModule('script.SomeOtherClass', DynamicModule.fromString(env, 'SomeOtherClass', File.getContent('script/SomeOtherClass.hx')));
 
-        var dynClass = env.modules.get('test.SomeClass').dynamicClasses.get('SomeClass');
+        env.link();
 
-        var that = new TestNativeClass();
+        trace(env.modules.get('script.SomeOtherClass').dynamicClasses);
+
+        var dynClass = env.modules.get('script.SomeClass').dynamicClasses.get('SomeClass');
+
+        //var that = new TestNativeClass();
          
         //var dynClass = dynModule.
 
@@ -148,7 +151,7 @@ class Main {
 
         //interpret.ImportTest.SomeOtherType.hi();
 
-        dynInstance.call('hello', ['Jon Snow']);
+        //dynInstance.call('hello', ['Jon Snow']);
 
         //env.extensions.set('Extensions', DynamicExtension.fromStatic(ceramic.Extensions));
 /*
