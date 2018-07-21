@@ -76,12 +76,42 @@ class ResolveUsings {
         var extendedTypesForName = addedItems.get(name);
 
         if (extendedTypesForName != null) {
-            if (extendedTypesForName.exists(extendedType)) {
-                return extendedTypesForName.get(extendedType);
-            }
-            var alias = env.aliases.get(extendedType);
-            if (alias != null && extendedTypesForName.exists(alias)) {
-                return extendedTypesForName.get(alias);
+
+            var type = extendedType;
+            while (type != null) {
+
+                if (extendedTypesForName.exists(type)) {
+                    return extendedTypesForName.get(type);
+                }
+                var alias = env.aliases.get(type);
+                if (alias != null && extendedTypesForName.exists(alias)) {
+                    return extendedTypesForName.get(alias);
+                }
+
+                // Implemented interfaces have extension?
+                var interfaces = env.getInterfaces(type);
+                if (interfaces != null) {
+                    for (item in interfaces.keys()) {
+                        var iActive = item;
+                        while (iActive != null) {
+
+                            if (extendedTypesForName.exists(iActive)) {
+                                return extendedTypesForName.get(iActive);
+                            }
+
+                            var iAlias = env.aliases.get(iActive);
+                            if (iAlias != null && extendedTypesForName.exists(iAlias)) {
+                                return extendedTypesForName.get(iAlias);
+                            }
+
+                            // Parent interface has extension?
+                            iActive = env.getSuperClass(iActive);
+                        }
+                    }
+                }
+
+                // Superclass has extension?
+                type = env.getSuperClass(type);
             }
         }
 

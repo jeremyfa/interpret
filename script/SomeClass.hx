@@ -52,7 +52,7 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
 
         var otherInstance = new SomeOtherClass();
 
-        otherInstance.hello();
+        otherInstance.hellooo('Pierrot');
 
     } //new
 

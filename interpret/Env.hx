@@ -200,8 +200,6 @@ class Env {
 
     function isKindOf(vType:String, tType:String):Bool {
 
-        trace('IS KIND OF $vType $tType');
-
         var tAlias = aliases.get(tType);
         var vActive = vType;
         
@@ -221,7 +219,6 @@ class Env {
             var interfaces = getInterfaces(vActive);
             if (interfaces != null) {
                 for (item in interfaces.keys()) {
-                    trace('TRY INTERFACE $item');
                     var iActive = item;
                     while (iActive != null) {
 

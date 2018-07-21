@@ -352,6 +352,8 @@ class DynamicClass {
         classProgram = parser.parseString(classHscript);
         instanceProgram = parser.parseString(instanceHscript);
 
+        Sys.println(instanceHscript);
+
     } //computeHscript
 
     function init() {

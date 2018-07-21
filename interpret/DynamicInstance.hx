@@ -12,11 +12,11 @@ class DynamicInstance {
 
 /// Properties
 
-    var interpreter:Interpreter;
+    public var interpreter(default,null):Interpreter;
 
-    var dynamicClass:DynamicClass;
+    public var dynamicClass(default,null):DynamicClass;
 
-    var context:Map<String,Dynamic> = null;
+    public var context(default,null):Map<String,Dynamic> = null;
 
     var _contextArgs:Array<Dynamic> = null;
 
@@ -108,19 +108,62 @@ class DynamicInstance {
 
     public function get(name:String):Dynamic {
 
-        return TypeUtils.unwrap(interpreter.resolve(name));
+        var prevSelf = interpreter._self;
+        var prevClassSelf = interpreter._classSelf;
+        interpreter._self = context;
+        interpreter._classSelf = dynamicClass.context;
+
+        var result = TypeUtils.unwrap(interpreter.get(context, name));
+
+        interpreter._self = prevSelf;
+        interpreter._classSelf = prevClassSelf;
+
+        return result;
 
     } //get
 
-    public function call(name:String, args:Array<Dynamic>):Dynamic {
+    public function has(name:String):Dynamic {
+
+        var prevUnresolved = interpreter._unresolved;
+        interpreter._unresolved = Unresolved.UNRESOLVED;
+
+        var result = get(name);
+
+        interpreter._unresolved = prevUnresolved;
+
+        return result != Unresolved.UNRESOLVED;
+
+    } //has
+
+    public function set(name:String, value:Dynamic):Dynamic {
 
         var prevSelf = interpreter._self;
         var prevClassSelf = interpreter._classSelf;
         interpreter._self = context;
         interpreter._classSelf = dynamicClass.context;
-        var method = interpreter.resolve(name);
+
+        var result = TypeUtils.unwrap(interpreter.set(context, name, value));
+
         interpreter._self = prevSelf;
         interpreter._classSelf = prevClassSelf;
+
+        return result;
+
+    } //set
+
+    public function call(name:String, args:Array<Dynamic>):Dynamic {
+
+        var prevSelf = interpreter._self;
+        var prevClassSelf = interpreter._classSelf;
+        
+        interpreter._self = context;
+        interpreter._classSelf = dynamicClass.context;
+
+        var method = interpreter.get(context, name);
+
+        interpreter._self = prevSelf;
+        interpreter._classSelf = prevClassSelf;
+
         if (method == null) {
             throw 'Method not found: $name';
         }

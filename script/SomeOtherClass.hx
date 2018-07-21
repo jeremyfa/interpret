@@ -3,6 +3,8 @@ package script;
 /** Some scriptable class */
 class SomeOtherClass implements interpret.Interpretable {
 
+    var machin:String = 'bidule';
+
     public function reload():Void {
 
         trace('RELOAD');
@@ -15,9 +17,9 @@ class SomeOtherClass implements interpret.Interpretable {
 
     } //new
 
-    public function hello() {
+    public function hellooo(plop:String = 'Jean-Paul') {
 
-        trace('hello from SOME OTHER CLASS');
+        trace('hellooo from SOME OTHER CLASS: $plop');
 
     } //hello
 
