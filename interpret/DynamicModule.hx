@@ -140,6 +140,7 @@ class DynamicModule {
                 switch (token) {
 
                     case TPackage(data):
+                        module.imports.pack = data.path;
                         module.pack = data.path;
                         packagePrefix = data.path != null && data.path != '' ? data.path + '.' : '';
                 
@@ -278,6 +279,9 @@ class DynamicModule {
                     // Static fields
                     for (field in t.get().statics.get()) {
                         if (!field.isPublic) continue;
+#if !interpret_keep_deprecated
+                        if (field.meta.has(':deprecated')) continue;
+#end
                         switch (field.kind) {
                             case FMethod(k):
                                 switch (field.type) {

@@ -1191,7 +1191,8 @@ class ConvertHaxe {
         'protected' => true,
         'dynamic' => true,
         'override' => true,
-        'private' => true
+        'private' => true,
+        'untyped' => true
     ];
 
 /// Regular expressions

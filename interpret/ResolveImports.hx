@@ -12,6 +12,8 @@ class ResolveImports {
 
     var items:Map<String,RuntimeItem> = new Map();
 
+    public var pack:String = null;
+
     public function new(env:Env) {
 
         this.env = env;

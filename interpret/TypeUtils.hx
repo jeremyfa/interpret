@@ -6,6 +6,15 @@ using StringTools;
 
 class TypeUtils {
 
+    static var _stdTypes = [
+        'String' => true,
+        'Int' => true,
+        'Float' => true,
+        'Bool' => true,
+        'Array' => true,
+        'Map' => true
+    ];
+
     /** Return a type string (with dot path if any) from the given object */
     public static function typeOf(obj:Dynamic, ?env:Env):String {
 
@@ -82,13 +91,17 @@ class TypeUtils {
         // Use imports to resolve extended type full dot path
         var resolveClassType = rawType.startsWith('Class<');
         if (resolveClassType) {
-            var resolvedType = imports.resolve(rawType.substring(6, rawType.length-1));
+            var classType = rawType.substring(6, rawType.length-1);
+            var resolvedType = imports.resolve(classType);
             if (resolvedType != null) {
                 switch (resolvedType) {
                     case ClassItem(rawItem, moduleId, name):
                         result = 'Class<' + name + '>';
                     default:
                 }
+            }
+            else if (imports.pack != null) {
+                result = 'Class<' + imports.pack + '.' + rawType + '>';
             }
         } else {
             var resolvedType = imports.resolve(rawType);
@@ -98,6 +111,12 @@ class TypeUtils {
                         result = name;
                     default:
                 }
+            }
+            else if (_stdTypes.exists(rawType)) {
+                return rawType;
+            }
+            else if (imports.pack != null) {
+                result = imports.pack + '.' + rawType;
             }
         }
 

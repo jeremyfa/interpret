@@ -74,8 +74,6 @@ class ResolveUsings {
 
     public function resolve(extendedType:String, name:String):RuntimeItem {
 
-        trace('USINGS RESOLVE $extendedType $name');
-
         var extendedTypesForName = addedItems.get(name);
 
         if (extendedTypesForName != null) {

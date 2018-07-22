@@ -18,13 +18,55 @@ class Test extends buddy.SingleSuite {
 
         describe("Interpret", {
 
-            it("should load and run a basic dynamic class", {
-                run('basic_class').should.be('hello');
+            it("should run BasicClass.staticHello(subject)", {
+                run('basic_class test_01').should.be('Static Hello Test 01');
             });
 
-            it("should handle preprocessor defines in script", {
-                // TODO
+            it("should run new BasicClass().hello(subject)", {
+                run('basic_class test_02').should.be('Hello Test 02');
             });
+
+            it("should run new BasicClass().hi(subject)", {
+                run('basic_class test_03').should.be('Hi Test 03!');
+            });
+
+            it("should run new ChildClass().hi(subject)", {
+                run('basic_class child_class test_04').should.be('Hi Test 04!');
+            });
+
+            it("should run new GrandChildClass().hi(subject)", {
+                run('basic_class child_class grand_child_class test_05').should.be('Hi Test 05!');
+            });
+
+            it("should run new GrandChildClass().bonjour(firstName)", {
+                run('basic_class child_class grand_child_class test_06').should.be('Bonjour Jon Snow.');
+            });
+
+            it("should run new ChildClass().bonjour(firstName, lastName)", {
+                run('basic_class child_class test_07').should.be('Bonjour Jon Doe.');
+            });
+
+            it("should run new NativeChildClass()", {
+                run('native_child_class test_08').should.be('Native Child');
+            });
+
+            it("should run ExtendedClass.urlEncodeTest(input)", {
+                run('extending_class extended_class test_09').should.be('Encoded: J%C3%A9r%C3%A9my');
+            });
+
+            it("should run ExtendedClass.gruntTest(input)", {
+                run('extending_class extended_class test_10').should.be('JÉRÉMY!!!');
+            });
+
+            // TODO native class
+            // TODO static extension
+            // TODO static extensino (dynamic)
+            // TODO interfaces, Std.is()
+            // TODO getter/setter
+
+            /*it("should handle preprocessor defines in script", {
+                // TODO
+            });*/
 
         });
         
@@ -34,10 +76,8 @@ class Test extends buddy.SingleSuite {
         (a preset become a preprocessor define when compiling haxe) */
     function run(preset:String):String {
 
-        // Compile
-        var proc = spawnSync('haxe', [
+        var buildArgs:Array<String> = [
             '-main', 'test.Host',
-            '-D', preset,
             '-cp', '.',
             '-lib', 'hxnodejs',
             '-lib', 'hscript',
@@ -45,7 +85,15 @@ class Test extends buddy.SingleSuite {
             '-debug',
             '-D', 'interpretable',
             '-dce', 'no'
-        ], {
+        ];
+
+        for (item in preset.split(' ')) {
+            buildArgs.push('-D');
+            buildArgs.push('host_' + item);
+        }
+
+        // Compile
+        var proc = spawnSync('haxe', buildArgs, {
             cwd: js.Node.__dirname,
             stdio: 'inherit'
         });

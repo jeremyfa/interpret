@@ -12,6 +12,9 @@ class Env {
     /** Aliases */
     public var aliases(default,null) = new Map<String,String>();
 
+    /** Custom trace */
+    public var trace:Dynamic = null;
+
     /** Internal map of modules */
     @:noCompletion
     public var modulesById:Map<Int,DynamicModule> = new Map();
@@ -72,6 +75,7 @@ class Env {
         stdModule.items.set('Std.is', ClassFieldItem(is, stdModule.id, 'Std.is'));
 
         addModule('Std', stdModule);
+        addModule('String', DynamicModule.fromStatic(String));
 
     } //addDefaultModules
 
@@ -123,6 +127,7 @@ class Env {
 
     } //getInterfaces
 
+    @:noCompletion
     public function resolveDynamicClass(moduleId:Int, name:String):DynamicClass {
 
         // TODO resolve dynamic class of field names

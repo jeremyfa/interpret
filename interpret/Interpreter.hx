@@ -91,8 +91,6 @@ class Interpreter extends hscript.Interp {
 
     override function resolve(id:String):Dynamic {
 
-        //if (id == selfName) return resolve;
-        //if (classInterpreter != null && id == classInterpreter.selfName) return classInterpreter.variables;
         var l = locals.get(id);
         if (l != null) {
             return l.r;
@@ -139,7 +137,11 @@ class Interpreter extends hscript.Interp {
         }
         if (variables.exists(id)) {
             var result = variables.get(id);
-            if (id != 'trace' && Reflect.isFunction(result)) {
+            if (id == 'trace') {
+                if (env.trace != null) return env.trace;
+                else return variables.get('trace');
+            }
+            else if (Reflect.isFunction(result)) {
                 // TODO cache?
                 if (classInterpreter != null) {
                     var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
@@ -200,7 +202,7 @@ class Interpreter extends hscript.Interp {
         if (pack != null) {
             return PackageItem(pack);
         }
-        return null;
+        return _unresolved;
 
     } //resolve
 
@@ -272,8 +274,6 @@ class Interpreter extends hscript.Interp {
 	} //assign
 
     override function get(o:Dynamic, f:String):Dynamic {
-
-        if (f == 'staticExt') trace('GET $o $f');
 
         var self:Map<String,Dynamic> = _self != null ? _self : locals.get(selfName).r;
         if (o == self) {

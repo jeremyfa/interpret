@@ -96,8 +96,6 @@ class DynamicInstance {
             }
         }
 
-        trace(interpreter.variables);
-
         // Call new()
         var _new = interpreter.variables.get('new');
         if (_new != null) {
@@ -153,7 +151,7 @@ class DynamicInstance {
 
     } //set
 
-    public function call(name:String, args:Array<Dynamic>):Dynamic {
+    public function call(name:String, ?args:Array<Dynamic>):Dynamic {
 
         var prevSelf = interpreter._self;
         var prevClassSelf = interpreter._classSelf;

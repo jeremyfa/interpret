@@ -45,23 +45,21 @@ class DynamicClass {
 
     var options:DynamicClassOptions;
 
-    var instances:Array<DynamicInstance> = [];
-
     var className:String = null;
 
     var classProperties:Array<String>;
 
     var instanceProperties:Array<String>;
 
-    var imports:ResolveImports = null;
+    public var imports(default,null):ResolveImports = null;
 
-    var usings:ResolveUsings = null;
+    public var usings(default,null):ResolveUsings = null;
 
-    var packagePath:String;
+    public var packagePath(default,null):String;
 
-    var instanceType:String;
+    public var instanceType(default,null):String;
 
-    var classType:String;
+    public var classType(default,null):String;
 
     var context:Map<String,Dynamic> = null;
 
@@ -85,7 +83,6 @@ class DynamicClass {
         if (interpreter == null) init();
 
         var instance = new DynamicInstance(this);
-        instances.push(instance);
         instance.init(args);
 
         return instance;
@@ -133,7 +130,7 @@ class DynamicClass {
 
     } //set
 
-    public function call(name:String, args:Array<Dynamic>):Dynamic {
+    public function call(name:String, ?args:Array<Dynamic>):Dynamic {
 
         if (interpreter == null) init();
 
@@ -216,6 +213,7 @@ class DynamicClass {
                     
                     case TPackage(data):
                         if (packagePath == null) packagePath = data.path;
+                        if (!importsReady) imports.pack = data.path;
                 
                     case TImport(data):
                         if (!importsReady) imports.addImport(data);
@@ -397,12 +395,12 @@ class DynamicClass {
         classProgram = parser.parseString(classHscript);
         instanceProgram = parser.parseString(instanceHscript);
 
-        Sys.println('-- BEGIN INST --');
+        /*Sys.println('-- BEGIN INST --');
         Sys.println(instanceHscript);
         Sys.println('-- END INST --');
         Sys.println('-- BEGIN STATIC --');
         Sys.println(classHscript);
-        Sys.println('-- END STATIC --');
+        Sys.println('-- END STATIC --');*/
 
     } //computeHscript
 
