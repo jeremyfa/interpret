@@ -131,8 +131,6 @@ class DynamicModule {
 
         function consumeTokens(shallow:Bool) {
 
-            Sys.println('CONSUME shallow=$shallow');
-
             var currentClassPath:String = null;
             var dynClass:DynamicClass = null;
             var modifiers = new Map<String,Bool>();
@@ -279,6 +277,7 @@ class DynamicModule {
 
                     // Static fields
                     for (field in t.get().statics.get()) {
+                        if (!field.isPublic) continue;
                         switch (field.kind) {
                             case FMethod(k):
                                 switch (field.type) {

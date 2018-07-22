@@ -1,8 +1,0 @@
--lib hscript
--main test.Main
--cp .
--debug
--D interpretable
--dce no
--lib hxnodejs
--js main.js

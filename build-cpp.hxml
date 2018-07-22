@@ -1,7 +1,0 @@
--lib hscript
--main test.Main
--cp .
--debug
--D interpretable
--dce no
--cpp bin

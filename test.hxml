@@ -1,0 +1,10 @@
+-lib hscript
+-lib buddy
+-D buddy-colors
+-main test.Test
+-cp .
+-debug
+-D interpretable
+-dce no
+-js test.js
+-lib hxnodejs
