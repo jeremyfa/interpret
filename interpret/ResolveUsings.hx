@@ -38,6 +38,7 @@ class ResolveUsings {
         }
 
         inline function add(name, extendedType, item) {
+            if (name == 'staticExt') trace('ADD USING $name $extendedType');
             var extendedTypesForName = addedItems.get(name);
             if (extendedTypesForName == null) {
                 extendedTypesForName = new Map();
@@ -72,6 +73,8 @@ class ResolveUsings {
     } //hasName
 
     public function resolve(extendedType:String, name:String):RuntimeItem {
+
+        trace('USINGS RESOLVE $extendedType $name');
 
         var extendedTypesForName = addedItems.get(name);
 

@@ -51,6 +51,12 @@ class Env {
             onLink();
         }
 
+        // Needs to be linked twice to ensure reciprocal dependencies
+        // are resolved properly
+        for (onLink in allOnLink) {
+            onLink();
+        }
+
         // Extract updated module info
         for (module in modules) {
             extractModuleInfo(module);
@@ -119,6 +125,8 @@ class Env {
 
     public function resolveDynamicClass(moduleId:Int, name:String):DynamicClass {
 
+        // TODO resolve dynamic class of field names
+
         var resolved = resolvedDynamicClasses.get(name);
         if (resolved != null || resolvedDynamicClasses.exists(name)) return resolved;
 
@@ -133,7 +141,7 @@ class Env {
                 resolvedDynamicClasses.set(name, dynClass);
                 return dynClass;
             }
-            var alias =aliases.get(name);
+            var alias = aliases.get(name);
             if (alias != null) {
                 className = alias;
                 if (module.pack != null && module.pack != '') {

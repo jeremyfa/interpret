@@ -1,5 +1,7 @@
 package script;
 
+import script.SomeClass;
+
 /** Some scriptable class */
 class SomeOtherClass implements interpret.Interpretable {
 
@@ -22,5 +24,17 @@ class SomeOtherClass implements interpret.Interpretable {
         trace('hellooo from SOME OTHER CLASS: $plop');
 
     } //hello
+
+    public static function staticStuff() {
+
+        trace('SomeOtherClass.staticStuff() YES');
+
+    } //staticStuff
+
+    public static function staticExt(subject:SomeClass, message:String) {
+
+        trace('SomeOtherClass.staticExt() $message');
+
+    } //staticStuff
 
 } //SomeOtherClass

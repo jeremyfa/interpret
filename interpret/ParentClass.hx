@@ -2,7 +2,7 @@ package interpret;
 
 class ParentClass {
 
-    var someParentProp:String = null;
+    var someParentProp:String = 'ok';
 
     function new() {}
 

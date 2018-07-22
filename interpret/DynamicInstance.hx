@@ -10,6 +10,8 @@ using StringTools;
 @:allow(interpret.Interpreter)
 class DynamicInstance {
 
+    static var NO_ARGS:Array<Dynamic> = [];
+
 /// Properties
 
     public var interpreter(default,null):Interpreter;
@@ -122,7 +124,7 @@ class DynamicInstance {
 
     } //get
 
-    public function has(name:String):Dynamic {
+    public function exists(name:String):Dynamic {
 
         var prevUnresolved = interpreter._unresolved;
         interpreter._unresolved = Unresolved.UNRESOLVED;
@@ -165,9 +167,9 @@ class DynamicInstance {
         interpreter._classSelf = prevClassSelf;
 
         if (method == null) {
-            throw 'Method not found: $name';
+            throw 'Instance method not found: $name';
         }
-        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? _contextArgs.concat(args) : _contextArgs));
+        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? args : NO_ARGS));
 
     } //call
 

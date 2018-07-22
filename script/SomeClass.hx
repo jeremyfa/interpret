@@ -9,6 +9,8 @@ import script.SomeOtherClass;
 
 using StringTools;
 
+using script.SomeOtherClass;
+
 /** Some interpretable class */
 class SomeClass implements Interpretable extends interpret.ParentClass {
 
@@ -54,7 +56,18 @@ class SomeClass implements Interpretable extends interpret.ParentClass {
 
         otherInstance.hellooo('Pierrot');
 
+        this.someLocalSelfMethod();
+        someLocalSelfMethod();
+
+        SomeOtherClass.staticStuff();
+
+        this.staticExt('Bob');
+
     } //new
+
+    public function someLocalSelfMethod() {
+        trace('someLocalSelfMethod() $this');
+    }
 
     public static function someStaticMeth() {
         ParentClass.somParentStaticStuff();

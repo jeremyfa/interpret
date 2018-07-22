@@ -19,6 +19,8 @@ class DynamicClass {
     @:noCompletion
     public static var _contextType:Class<Dynamic> = null;
 
+    static var NO_ARGS:Array<Dynamic> = [];
+
 /// Properties
 
     public var classHscript(default,null):String;
@@ -63,6 +65,8 @@ class DynamicClass {
 
     var context:Map<String,Dynamic> = null;
 
+    var _contextArgs:Array<Dynamic> = null;
+
 /// Lifecycle
 
     public function new(env:Env, options:DynamicClassOptions) {
@@ -83,6 +87,7 @@ class DynamicClass {
         var instance = new DynamicInstance(this);
         instances.push(instance);
         instance.init(args);
+
         return instance;
 
     } //createInstance
@@ -91,19 +96,59 @@ class DynamicClass {
 
         if (interpreter == null) init();
 
-        return TypeUtils.unwrap(interpreter.resolve(name));
+        var prevSelf = interpreter._self;
+        interpreter._self = context;
+
+        var result = TypeUtils.unwrap(interpreter.get(context, name));
+
+        interpreter._self = prevSelf;
+
+        return result;
 
     } //get
+
+    public function exists(name:String):Dynamic {
+
+        var prevUnresolved = interpreter._unresolved;
+        interpreter._unresolved = Unresolved.UNRESOLVED;
+
+        var result = get(name);
+
+        interpreter._unresolved = prevUnresolved;
+
+        return result != Unresolved.UNRESOLVED;
+
+    } //has
+
+    public function set(name:String, value:Dynamic):Dynamic {
+
+        var prevSelf = interpreter._self;
+        interpreter._self = context;
+
+        var result = TypeUtils.unwrap(interpreter.set(context, name, value));
+
+        interpreter._self = prevSelf;
+
+        return result;
+
+    } //set
 
     public function call(name:String, args:Array<Dynamic>):Dynamic {
 
         if (interpreter == null) init();
 
-        var method = interpreter.resolve(name);
+        var prevSelf = interpreter._self;
+        
+        interpreter._self = context;
+
+        var method = interpreter.get(context, name);
+
+        interpreter._self = prevSelf;
+
         if (method == null) {
-            throw 'Method not found: $name';
+            throw 'Class method not found: $name';
         }
-        return TypeUtils.unwrap(Reflect.callMethod(null, method, args));
+        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? args : NO_ARGS));
 
     } //call
 
@@ -352,7 +397,12 @@ class DynamicClass {
         classProgram = parser.parseString(classHscript);
         instanceProgram = parser.parseString(instanceHscript);
 
+        Sys.println('-- BEGIN INST --');
         Sys.println(instanceHscript);
+        Sys.println('-- END INST --');
+        Sys.println('-- BEGIN STATIC --');
+        Sys.println(classHscript);
+        Sys.println('-- END STATIC --');
 
     } //computeHscript
 
@@ -362,6 +412,7 @@ class DynamicClass {
         context = new Map();
         context.set('__interpretType', classType);
         if (_contextType == null) _contextType = Type.getClass(context);
+        _contextArgs = [context];
 
         // Create class interpreter
         interpreter = new Interpreter(this, className);

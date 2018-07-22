@@ -138,7 +138,31 @@ class Interpreter extends hscript.Interp {
             }
         }
         if (variables.exists(id)) {
-            return variables.get(id);
+            var result = variables.get(id);
+            if (id != 'trace' && Reflect.isFunction(result)) {
+                // TODO cache?
+                if (classInterpreter != null) {
+                    var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
+                    var selfArgs:Array<Dynamic> = [classSelf, self];
+                    return Reflect.makeVarArgs(function(args) {
+                        return Reflect.callMethod(
+                            null,
+                            result,
+                            args == null || args.length == 0 ? selfArgs : selfArgs.concat(args)
+                        );
+                    });
+                } else {
+                    var selfArgs:Array<Dynamic> = [self];
+                    return Reflect.makeVarArgs(function(args) {
+                        return Reflect.callMethod(
+                            null,
+                            result,
+                            args == null || args.length == 0 ? selfArgs : selfArgs.concat(args)
+                        );
+                    });
+                }
+            }
+            return result;
         }
         if (classInterpreter != null) {
             var classSelf:Map<String,Dynamic> = locals.get(classInterpreter.selfName).r;
@@ -249,6 +273,8 @@ class Interpreter extends hscript.Interp {
 
     override function get(o:Dynamic, f:String):Dynamic {
 
+        if (f == 'staticExt') trace('GET $o $f');
+
         var self:Map<String,Dynamic> = _self != null ? _self : locals.get(selfName).r;
         if (o == self) {
             if (hasGetter(f)) {
@@ -337,6 +363,7 @@ class Interpreter extends hscript.Interp {
             else if (classSelf.exists(f)) {
                 return classSelf.get(f);
             }
+            // TODO static/class interpreter.variables
             else if (existsAsExtension(f)) {
                 var typePath = dynamicClass.classType;
                 var resolved = dynamicClass.usings.resolve(typePath, f);
@@ -387,6 +414,14 @@ class Interpreter extends hscript.Interp {
             dynInst.interpreter._queryingInterpreter = this;
             var result = dynInst.get(f);
             dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
+            return result;
+        }
+        else if (Std.is(o, DynamicClass)) {
+            var dynClass:DynamicClass = cast o;
+            var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
+            dynClass.interpreter._queryingInterpreter = this;
+            var result = dynClass.get(f);
+            dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
         else if (existsAsExtension(f)) {
@@ -447,17 +482,25 @@ class Interpreter extends hscript.Interp {
             switch (f) {
                 case ExtensionItem(ClassFieldItem(rawItem, moduleId, name), _):
                     if (rawItem == null) {
-                        var dynClass = env.resolveDynamicClass(moduleId, name);
+                        var dotIndex = name.lastIndexOf('.');
+                        var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
                         if (dynClass != null) {
-                            trace('CALL DYN CLASS EXT');
+                            return dynClass.call(name.substring(dotIndex + 1), [o].concat(args));
+                        }
+                        else {
+                            throw 'Unresolved dynamic extension: ' + name;
                         }
                     }
                     return Reflect.callMethod(null, rawItem, [o].concat(args));
                 case ClassFieldItem(rawItem, moduleId, name):
                     if (rawItem == null) {
-                        var dynClass = env.resolveDynamicClass(moduleId, name);
+                        var dotIndex = name.lastIndexOf('.');
+                        var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
                         if (dynClass != null) {
-                            trace('CALL DYN CLASS METHOD');
+                            return dynClass.call(name.substring(dotIndex + 1), args);
+                        }
+                        else {
+                            throw 'Unresolved dynamic class field: ' + name;
                         }
                     }
                     return Reflect.callMethod(o, rawItem, args);
@@ -467,8 +510,17 @@ class Interpreter extends hscript.Interp {
                     }
                     return Reflect.callMethod(o, rawItem, args);
                 case SuperClassItem(ClassItem(rawItem, moduleId, name)):
-                    if (Std.is(rawItem, DynamicClass)) {
-                        return null; // TODO
+                    if (rawItem == null) {
+                        var dynClass = env.resolveDynamicClass(moduleId, name);
+                        if (dynClass != null) {
+                            var self:Map<String,Dynamic> = locals.get(selfName).r;
+                            var instance = dynClass.createInstance(args);
+                            self.set('super', instance);
+                            return instance;
+                        }
+                        else {
+                            throw 'Unresolved dynamic superclass: ' + name;
+                        }
                     }
                     var self:Map<String,Dynamic> = locals.get(selfName).r;
                     var instance = Type.createInstance(rawItem, args);
