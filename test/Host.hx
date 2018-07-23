@@ -139,6 +139,150 @@ class Host {
         Sys.println('' + dynInst.call('isBasicClass2'));
         #end
 
+        #if host_test_14
+        var dynClass = env.modules.get('test.script.ChildClass').dynamicClasses.get('ChildClass');
+        var dynInst = dynClass.createInstance();
+        Sys.println('' + dynInst.call('isNativeClass'));
+        #end
+
+        #if host_test_15
+        var dynClass = env.modules.get('test.script.NativeChildClass').dynamicClasses.get('NativeChildClass');
+        var dynInst = dynClass.createInstance();
+        Sys.println('' + dynInst.call('isNativeClass'));
+        #end
+
+        #if host_test_16
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        Sys.println('' + dynInst.exists('sVar1'));
+        #end
+
+        #if host_test_17
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.get('sVar1'));
+        #end
+
+        #if host_test_18
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.get('sVar2'));
+        #end
+
+        #if host_test_19
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        dynClass.set('sVar2', 3000);
+        Sys.println('' + dynClass.get('sVar1'));
+        #end
+
+        #if host_test_20
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        dynClass.set('sVar3', 3000);
+        Sys.println('' + dynClass.get('sVar1'));
+        #end
+
+        #if host_test_21
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        dynClass.set('sVar3', 3000);
+        Sys.println('' + dynClass.get('sVar2'));
+        #end
+
+        #if host_test_22
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        dynClass.set('sVar2', 3000);
+        Sys.println('' + dynClass.get('sVar3'));
+        #end
+
+        #if host_test_23
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        dynClass.set('sVar2', 3000);
+        Sys.println('' + dynClass.get('sVar2'));
+        #end
+
+        #if host_test_24
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        dynClass.set('sVar3', 3000);
+        Sys.println('' + dynClass.get('sVar3'));
+        #end
+
+        #if host_test_25
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.exists('mVar1'));
+        #end
+
+        #if host_test_26
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        Sys.println('' + dynInst.get('mVar1'));
+        #end
+
+        #if host_test_27
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        Sys.println('' + dynInst.get('mVar2'));
+        #end
+
+        #if host_test_28
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar2', 3000);
+        Sys.println('' + dynInst.get('mVar1'));
+        #end
+
+        #if host_test_29
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar3', 3000);
+        Sys.println('' + dynInst.get('mVar1'));
+        #end
+
+        #if host_test_30
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar3', 3000);
+        Sys.println('' + dynInst.get('mVar2'));
+        #end
+
+        #if host_test_31
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar2', 3000);
+        Sys.println('' + dynInst.get('mVar3'));
+        #end
+
+        #if host_test_32
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar2', 3000);
+        Sys.println('' + dynInst.get('mVar2'));
+        #end
+
+        #if host_test_33
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar3', 3000);
+        Sys.println('' + dynInst.get('mVar3'));
+        #end
+
+        #if host_test_34
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar4', 3000);
+        Sys.println('' + dynInst.get('mVar4'));
+        #end
+
+        #if host_test_35
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar5', 3000);
+        Sys.println('' + dynClass.get('sVar1'));
+        #end
+
+        #if host_test_36
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.set('mVar6', 3000);
+        Sys.println('' + dynInst.get('mVar6'));
+        #end
+
     } //main
 
 } //Host

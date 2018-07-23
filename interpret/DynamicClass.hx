@@ -106,6 +106,8 @@ class DynamicClass {
 
     public function exists(name:String):Dynamic {
 
+        if (interpreter == null) init();
+
         var prevUnresolved = interpreter._unresolved;
         interpreter._unresolved = Unresolved.UNRESOLVED;
 
@@ -118,6 +120,8 @@ class DynamicClass {
     } //has
 
     public function set(name:String, value:Dynamic):Dynamic {
+
+        if (interpreter == null) init();
 
         var prevSelf = interpreter._self;
         interpreter._self = context;

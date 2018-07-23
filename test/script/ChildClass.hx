@@ -9,4 +9,10 @@ class ChildClass extends BasicClass {
 
     } //new
 
+    public function isNativeClass() {
+
+        return Std.is(this, test.native.NativeClass);
+
+    } //isNativeClass
+
 } //ChildClass

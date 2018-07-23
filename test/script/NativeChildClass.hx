@@ -11,4 +11,10 @@ class NativeChildClass extends NativeClass {
 
     } //new
 
+    public function isNativeClass() {
+
+        return Std.is(this, test.native.NativeClass);
+
+    } //isNativeClass
+
 } //NativeChildClass

@@ -215,6 +215,28 @@ class Interpreter extends hscript.Interp {
 			var l = locals.get(id);
 			if( l == null ) {
                 var self:Map<String,Dynamic> = locals.get(selfName).r;
+                if (hasSetter(id)) {
+                    if (classInterpreter != null) {
+                        var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
+				        return variables.get('set_' + id)(classSelf, self, v);
+                    } else {
+				        return variables.get('set_' + id)(self, v);
+                    }
+                }
+                else if (self.exists(id)) {
+                    self.set(id, v);
+                    return v;
+                }
+                else if (classInterpreter != null) {
+                    var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
+                    if (classInterpreter.hasSetter(id)) {
+                        return classInterpreter.variables.get('set_' + id)(classSelf, v);
+                    }
+                    else if (classSelf.exists(id)) {
+                        classSelf.set(id, v);
+                        return v;
+                    }
+                }
                 var superInstance = self.get('super');
                 if (superInstance != null) {
                     if (Std.is(superInstance, DynamicInstance)) {
@@ -238,17 +260,8 @@ class Interpreter extends hscript.Interp {
                         }
                     }
                 }
-                if (hasSetter(id)) {
-                    if (classInterpreter != null) {
-                        var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
-				        return variables.get('set_' + id)(classSelf, self, v);
-                    } else {
-				        return variables.get('set_' + id)(self, v);
-                    }
-                } else if (classInterpreter != null && classInterpreter.hasSetter(id)) {
-                    var classSelf:Map<String,Dynamic> = _classSelf != null ? _classSelf : locals.get(classInterpreter.selfName).r;
-				    return classInterpreter.variables.get('set_' + id)(classSelf, v);
-                } else {
+                else {
+                    self.set(id, v);
                     return v;
                 }
             }
@@ -477,6 +490,43 @@ class Interpreter extends hscript.Interp {
             }
             return v;
         }
+        if (Std.is(o, RuntimeItem)) {
+            var moduleItem:RuntimeItem = cast o;
+            switch (moduleItem) {
+                case ClassFieldItem(rawItem, moduleId, name) | ExtensionItem(ClassFieldItem(rawItem, moduleId, name), _):
+                    if (rawItem == null) {
+                        var dotIndex = name.lastIndexOf('.');
+                        var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
+                        if (dynClass != null) {
+                            return set(dynClass.get(name.substring(dotIndex + 1)), f, v);
+                        }
+                        else {
+                            throw 'Failed to set value for class field ' + name;
+                        }
+                    }
+                    return super.set(rawItem, f, v);
+                case ClassItem(rawItem, moduleId, name):
+                    return set(unwrap(o), f, v);
+                default:
+                    return null;
+            }
+        }
+        else if (Std.is(o, DynamicInstance)) {
+            var dynInst:DynamicInstance = cast o;
+            var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
+            dynInst.interpreter._queryingInterpreter = this;
+            var result = dynInst.set(f, v);
+            dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
+            return result;
+        }
+        else if (Std.is(o, DynamicClass)) {
+            var dynClass:DynamicClass = cast o;
+            var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
+            dynClass.interpreter._queryingInterpreter = this;
+            var result = dynClass.set(f, v);
+            dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
+            return result;
+        }
         return super.set(o, f, v);
 
     } //set
@@ -562,14 +612,34 @@ class Interpreter extends hscript.Interp {
                     // We ensure this won't be considered as an extension item
                     // but just a regular field
                     switch (subItem) {
-                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassItem(rawItem, _, _) | ClassFieldItem(rawItem, _, _):
+                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _):
                             // Unwrap
+                            return rawItem;
+                        case ClassFieldItem(rawItem, moduleId, name):
+                            if (rawItem == null) {
+                                var dotIndex = name.lastIndexOf('.');
+                                var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
+                                if (dynClass != null) return dynClass.get(name.substring(dotIndex + 1));
+                            }
+                            return rawItem;
+                        case ClassItem(rawItem, moduleId, name):
+                            if (rawItem == null) {
+                                var dynClass = env.resolveDynamicClass(moduleId, name);
+                                if (dynClass != null) return dynClass;
+                            }
                             return rawItem;
                         default:
                             return subItem;
                     }
-                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _) | ClassFieldItem(rawItem, _, _):
+                case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _):
                     // Unwrap
+                    return rawItem;
+                case ClassFieldItem(rawItem, moduleId, name):
+                    if (rawItem == null) {
+                        var dotIndex = name.lastIndexOf('.');
+                        var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
+                        if (dynClass != null) return dynClass.get(name.substring(dotIndex + 1));
+                    }
                     return rawItem;
                 case ClassItem(rawItem, moduleId, name):
                     if (rawItem == null) {
