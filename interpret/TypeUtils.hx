@@ -124,20 +124,31 @@ class TypeUtils {
 
     } //toResolvedType
 
-    public static function unwrap(value:Dynamic):Dynamic {
+    public static function unwrap(value:Dynamic, ?env:Env):Dynamic {
 
         if (value == null) return null;
-
-        // TODO resolve dynamic classes
 
         if (Std.is(value, RuntimeItem)) {
             var item:RuntimeItem = cast value;
             switch (item) {
                 case ExtensionItem(item, _) | SuperClassItem(item):
-                    return unwrap(item);
-                case ClassFieldItem(rawItem, _, _):
+                    return unwrap(item, env);
+                case ClassFieldItem(rawItem, moduleId, name):
+                    if (rawItem == null && env != null) {
+                        var dotIndex = name.lastIndexOf('.');
+                        var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
+                        if (dynClass != null) {
+                            return dynClass.get(name.substring(dotIndex + 1));
+                        }
+                    }
                     return rawItem;
-                case ClassItem(rawItem, _, _):
+                case ClassItem(rawItem, moduleId, name):
+                    if (rawItem == null && env != null) {
+                        var dynClass = env.resolveDynamicClass(moduleId, name);
+                        if (dynClass != null) {
+                            return dynClass;
+                        }
+                    }
                     return rawItem;
                 case EnumItem(rawItem, _, _):
                     return rawItem;

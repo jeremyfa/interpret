@@ -113,7 +113,7 @@ class DynamicInstance {
         interpreter._self = context;
         interpreter._classSelf = dynamicClass.context;
 
-        var result = TypeUtils.unwrap(interpreter.get(context, name));
+        var result = TypeUtils.unwrap(interpreter.get(context, name), dynamicClass.env);
 
         interpreter._self = prevSelf;
         interpreter._classSelf = prevClassSelf;
@@ -142,7 +142,7 @@ class DynamicInstance {
         interpreter._self = context;
         interpreter._classSelf = dynamicClass.context;
 
-        var result = TypeUtils.unwrap(interpreter.set(context, name, value));
+        var result = TypeUtils.unwrap(interpreter.set(context, name, value), dynamicClass.env);
 
         interpreter._self = prevSelf;
         interpreter._classSelf = prevClassSelf;
@@ -167,7 +167,7 @@ class DynamicInstance {
         if (method == null) {
             throw 'Instance method not found: $name';
         }
-        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? args : NO_ARGS));
+        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? args : NO_ARGS), dynamicClass.env);
 
     } //call
 

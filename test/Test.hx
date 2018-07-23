@@ -58,11 +58,23 @@ class Test extends buddy.SingleSuite {
                 run('extending_class extended_class test_10').should.be('JÉRÉMY!!!');
             });
 
-            // TODO native class
-            // TODO static extension
-            // TODO static extensino (dynamic)
+            it("should run new ImplementingClass().isNativeInterface()", {
+                run('implementing_class test_11').should.be('true');
+            });
+
+            it("should run new BasicClass().isBasicClass()", {
+                run('basic_class test_12').should.be('true');
+            });
+
+            it("should run new BasicClass().isBasicClass2()", {
+                run('basic_class test_13').should.be('true');
+            });
+
             // TODO interfaces, Std.is()
             // TODO getter/setter
+            // TODO module with multiple types (native)
+            // TODO module with multiple types (interpreted)
+            // TODO test.script.SomeClass.SomeSubClass
 
             /*it("should handle preprocessor defines in script", {
                 // TODO

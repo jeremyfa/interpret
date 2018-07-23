@@ -20,6 +20,18 @@ class BasicClass {
 
     } //hi
 
+    public function isBasicClass() {
+
+        return Std.is(this, BasicClass);
+
+    } //isBasicClass
+
+    public function isBasicClass2() {
+
+        return Std.is(this, test.script.BasicClass);
+
+    } //isBasicClass2
+
     public function bonjour(firstName:String, lastName:String = 'Snow'):Void {
 
         // Last name with default value

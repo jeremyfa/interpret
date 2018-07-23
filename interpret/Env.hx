@@ -177,19 +177,26 @@ class Env {
     /** Like Std.is(), but accepts dynamic/scriptable types as well. */
     public function is(v:Dynamic, t:Dynamic):Bool {
 
-        trace('this = $this');
-
         // Unwrap v & t if needed
-        v = TypeUtils.unwrap(v);
-        t = TypeUtils.unwrap(t);
+        v = TypeUtils.unwrap(v, this);
+        t = TypeUtils.unwrap(t, this);
         var vType:String = null;
         var tClassType:String = null;
+        
         if (Std.is(v, DynamicClass._contextType) && v.exists('__interpretType')) {
             vType = v.get('__interpretType');
         }
-        if (Std.is(t, DynamicClass)) {
+        else if (Std.is(v, DynamicClass) || Std.is(v, DynamicInstance)) {
+            vType = TypeUtils.typeOf(v, this);
+        }
+
+        if (Std.is(t, DynamicClass._contextType) && t.exists('__interpretType')) {
+            tClassType = t.get('__interpretType');
+        }
+        else if (Std.is(t, DynamicClass)) {
             tClassType = TypeUtils.typeOf(t, this);
         }
+
         if (vType == null && tClassType == null) {
             // Nothing dynamic, use standard Std.is()
             return Std.is(v, t);
@@ -262,9 +269,12 @@ class Env {
     function extractModuleInfo(module:DynamicModule):Void {
 
         // Update available root packs
-        if (module.pack != null) {
+        if (module.pack != null && module.pack != '') {
             var parts = module.pack.split('.');
-            availablePacks.set(parts[0], true);
+            for (i in 1...parts.length+1) {
+                var subPath = parts.slice(0, i).join('.');
+                availablePacks.set(subPath, true);
+            }
         }
 
         // Update aliases

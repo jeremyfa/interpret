@@ -431,6 +431,10 @@ class Interpreter extends hscript.Interp {
                 return resolved;
             }
         }
+        else if (Std.is(o, DynamicPackage)) {
+            var dynPack:DynamicPackage = cast o;
+            return dynPack.getSub(f);
+        }
         return super.get(o, f);
 
     } //get

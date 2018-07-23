@@ -22,11 +22,13 @@ class Host {
         env.addDefaultModules();
 
         // Route script `trace` to Sys.println
-        env.trace = Sys.println;
+        env.trace = function(input) Sys.println(''+input);
 
         // Modules from static (native) code
         env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
+        env.addModule('Math', DynamicModule.fromStatic(Math));
         env.addModule('test.native.NativeClass', DynamicModule.fromStatic(test.native.NativeClass));
+        env.addModule('test.native.NativeInterface', DynamicModule.fromStatic(test.native.NativeInterface));
         #if (sys || nodejs)
         env.addModule('Sys', DynamicModule.fromStatic(Sys));
         #end
@@ -54,6 +56,10 @@ class Host {
 
         #if host_extending_class
         env.addModule('test.script.ExtendingClass', DynamicModule.fromString(env, 'ExtendingClass', File.getContent('test/script/ExtendingClass.hx')));
+        #end
+
+        #if host_implementing_class
+        env.addModule('test.script.ImplementingClass', DynamicModule.fromString(env, 'ImplementingClass', File.getContent('test/script/ImplementingClass.hx')));
         #end
 
         env.link();
@@ -113,6 +119,24 @@ class Host {
         #if host_test_10
         var dynClass = env.modules.get('test.script.ExtendedClass').dynamicClasses.get('ExtendedClass');
         dynClass.call('gruntTest', ['Jérémy']);
+        #end
+
+        #if host_test_11
+        var dynClass = env.modules.get('test.script.ImplementingClass').dynamicClasses.get('ImplementingClass');
+        var dynInst = dynClass.createInstance();
+        Sys.println('' + dynInst.call('isNativeInterface'));
+        #end
+
+        #if host_test_12
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        Sys.println('' + dynInst.call('isBasicClass'));
+        #end
+
+        #if host_test_13
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        Sys.println('' + dynInst.call('isBasicClass2'));
         #end
 
     } //main

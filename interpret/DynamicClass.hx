@@ -96,7 +96,7 @@ class DynamicClass {
         var prevSelf = interpreter._self;
         interpreter._self = context;
 
-        var result = TypeUtils.unwrap(interpreter.get(context, name));
+        var result = TypeUtils.unwrap(interpreter.get(context, name), env);
 
         interpreter._self = prevSelf;
 
@@ -122,7 +122,7 @@ class DynamicClass {
         var prevSelf = interpreter._self;
         interpreter._self = context;
 
-        var result = TypeUtils.unwrap(interpreter.set(context, name, value));
+        var result = TypeUtils.unwrap(interpreter.set(context, name, value), env);
 
         interpreter._self = prevSelf;
 
@@ -145,7 +145,7 @@ class DynamicClass {
         if (method == null) {
             throw 'Class method not found: $name';
         }
-        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? args : NO_ARGS));
+        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? args : NO_ARGS), env);
 
     } //call
 
