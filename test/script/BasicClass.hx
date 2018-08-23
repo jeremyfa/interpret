@@ -1,5 +1,7 @@
 package test.script;
 
+import test.native.NativeGroup.Class2;
+
 class BasicClass {
 
     public static var sVar1:Int = 451;
@@ -126,5 +128,41 @@ class BasicClass {
         trace('Static Hello ' + subject);
 
     } //staticHello
+
+    public static function nativeGroupClass1IsClass1() {
+
+        return new test.native.NativeGroup.Class1().isClass1();
+
+    } //nativeGroupClass1IsClass1
+
+    public static function nativeGroupClass1IsClass2() {
+
+        return new test.native.NativeGroup.Class1().isClass2();
+
+    } //nativeGroupClass1IsClass2
+
+    public static function nativeGroupClass2IsClass1() {
+
+        return new Class2().isClass1();
+
+    } //nativeGroupClass2IsClass1
+
+    public static function nativeGroupClass2IsClass2() {
+
+        return new Class2().isClass2();
+
+    } //nativeGroupClass2IsClass2
+
+    public static function nativeGroupClass1StaticMethod1() {
+
+        return test.native.NativeGroup.Class1.staticMethod1();
+
+    } //nativeGroupClass1StaticMethod1
+
+    public static function nativeGroupClass2StaticMethod2() {
+
+        return Class2.staticMethod2();
+
+    } //nativeGroupClass2StaticMethod2
 
 } //BasicClass

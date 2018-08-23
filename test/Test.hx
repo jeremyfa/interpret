@@ -16,11 +16,15 @@ class Test extends buddy.SingleSuite {
         } catch (e:Dynamic) {}
 #end
 
-        describe("Interpret", {
+        describe("Static method calls", {
 
             it("BasicClass.staticHello('Test 01') -> 'Static Hello Test 01'", {
                 run('basic_class test_01').should.be('Static Hello Test 01');
             });
+
+        });
+
+        describe("Instance method calls", {
 
             it("new BasicClass().hello('Test 02') -> 'Hello Test 02'", {
                 run('basic_class test_02').should.be('Hello Test 02');
@@ -29,6 +33,10 @@ class Test extends buddy.SingleSuite {
             it("new BasicClass().hi('Test 03') -> 'Hi Test 03!'", {
                 run('basic_class test_03').should.be('Hi Test 03!');
             });
+
+        });
+
+        describe("Field access in subclasses", {
 
             it("new ChildClass().hi('Test 04') -> 'Hi Test 04!'", {
                 run('basic_class child_class test_04').should.be('Hi Test 04!');
@@ -50,6 +58,10 @@ class Test extends buddy.SingleSuite {
                 run('native_child_class test_08').should.be('Native Child');
             });
 
+        });
+
+        describe("Static extensions", {
+
             it("ExtendedClass.urlEncodeTest('Jérémy') -> 'Encoded: J%C3%A9r%C3%A9my'", {
                 run('extending_class extended_class test_09').should.be('Encoded: J%C3%A9r%C3%A9my');
             });
@@ -58,9 +70,17 @@ class Test extends buddy.SingleSuite {
                 run('extending_class extended_class test_10').should.be('JÉRÉMY!!!');
             });
 
+        });
+
+        describe("Interfaces", {
+
             it("new ImplementingClass().isNativeInterface() -> true", {
                 run('implementing_class test_11').should.be('true');
             });
+
+        });
+
+        describe("Inheritance", {
 
             it("new BasicClass().isBasicClass() -> true", {
                 run('basic_class test_12').should.be('true');
@@ -77,6 +97,10 @@ class Test extends buddy.SingleSuite {
             it("new NativeChildClass().isNativeClass() -> true", {
                 run('native_class basic_class native_child_class test_15').should.be('true');
             });
+
+        });
+
+        describe("Properties, getters and setters", {
 
             it("new BasicClass().sVar1 -> null", {
                 run('basic_class test_16').should.be('false');
@@ -161,21 +185,87 @@ class Test extends buddy.SingleSuite {
             it("new BasicClass().mVar6 = 3000; .mVar6 -> 3000", {
                 run('basic_class test_36').should.be('3000');
             });
+        
+        });
 
-            // TODO module with multiple types (native)
+        describe("Module with multiple types", {
+
+            it("new test.native.NativeGroup.Class1().isClass1() -> true", {
+                run('native_group basic_class test_37').should.be('true');
+            });
+
+            it("new test.native.NativeGroup.Class1().isClass2() -> false", {
+                run('native_group basic_class test_38').should.be('false');
+            });
+
+            it("new Class2().isClass1() -> false", {
+                run('native_group basic_class test_39').should.be('false');
+            });
+
+            it("new Class2().isClass2() -> true", {
+                run('native_group basic_class test_40').should.be('true');
+            });
+
+            it("new Class1().isClass1() -> true", {
+                run('native_group other_class test_41').should.be('true');
+            });
+
+            it("new Class2().isClass1() -> false", {
+                run('native_group other_class test_42').should.be('false');
+            });
+
+            it("test.native.NativeGroup.Class1.staticMethod1() -> 'static1'", {
+                run('native_group basic_class test_43').should.be('static1');
+            });
+
+            it("Class2.staticMethod2() -> 'static2'", {
+                run('native_group basic_class test_44').should.be('static2');
+            });
+
+            it("Class1.staticMethod1() -> 'static1'", {
+                run('native_group other_class test_45').should.be('static1');
+            });
+
+            it("Class2.staticMethod2() -> 'static2'", {
+                run('native_group other_class test_46').should.be('static2');
+            });
+
+        });
+
+        describe('Constructor and arguments', {
+
+            it("new OtherClass().name -> 'Paul'", {
+                run('other_class test_47').should.be('Paul');
+            });
+
+            it("new OtherClass().age -> -1", {
+                run('other_class test_48').should.be('-1');
+            });
+
+            it("new OtherClass('Jon', 21).name -> 'Jon'", {
+                run('other_class test_49').should.be('Jon');
+            });
+
+            it("new OtherClass('Jon', 21).age -> 21", {
+                run('other_class test_50').should.be('21');
+            });
+
+        });
+
+            // OK constructor with arguments
+            // OK module with multiple types (native)
             // TODO module with multiple types (interpreted)
             // TODO test.script.SomeClass.SomeSubClass
             // TODO call static method from instance method
             // TODO call static method from static method
             // TODO call instance method from instance method
-            // TODO instanciate native class in code
-            // TODO instanciate dynamic class in code
+            // TODO instanciate native class in code (with args)
+            // TODO instanciate dynamic class in code (with args)
 
-            /*it("should handle preprocessor defines in script", {
-                // TODO
-            });*/
+            // TODO? get property from extension getter
+            // TODO? assign property from extension setter
 
-        });
+            // TODO should handle preprocessor defines in script
         
     } //new
 

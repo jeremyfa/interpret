@@ -448,6 +448,10 @@ class Interpreter extends hscript.Interp {
             var dynPack:DynamicPackage = cast o;
             return dynPack.getSub(f);
         }
+        else if (Std.is(o, DynamicModule)) {
+            var dynMod:DynamicModule = cast o;
+            return unwrap(dynMod.items.get(dynMod.typePath + '.' + f));
+        }
         return super.get(o, f);
 
     } //get
@@ -589,12 +593,26 @@ class Interpreter extends hscript.Interp {
 
     override function cnew(cl:String, args:Array<Dynamic>):Dynamic {
 
-        var clazz = resolve(cl);
+        // Resolve class
+        var parts = cl.split('.');
+        var resolved:Dynamic = null;
+        var i = 0;
+        for (part in parts) {
+            if (i++ == 0) {
+                resolved = resolve(part);
+            } else {
+                resolved = get(resolved, part);
+            }
+        }
+        var clazz = resolved;
 
         // Dynamic class?
         if (Std.is(clazz, DynamicClass)) {
             var dynClass:DynamicClass = cast clazz;
             return dynClass.createInstance(args);
+        }
+        else if (Std.is(clazz, Class)) {
+            return Type.createInstance(clazz, args);
         }
 
         return super.cnew(cl, args);

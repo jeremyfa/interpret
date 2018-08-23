@@ -29,6 +29,7 @@ class Host {
         env.addModule('Math', DynamicModule.fromStatic(Math));
         env.addModule('test.native.NativeClass', DynamicModule.fromStatic(test.native.NativeClass));
         env.addModule('test.native.NativeInterface', DynamicModule.fromStatic(test.native.NativeInterface));
+        env.addModule('test.native.NativeGroup', DynamicModule.fromStatic(test.native.NativeGroup));
         #if (sys || nodejs)
         env.addModule('Sys', DynamicModule.fromStatic(Sys));
         #end
@@ -60,6 +61,10 @@ class Host {
 
         #if host_implementing_class
         env.addModule('test.script.ImplementingClass', DynamicModule.fromString(env, 'ImplementingClass', File.getContent('test/script/ImplementingClass.hx')));
+        #end
+
+        #if host_other_class
+        env.addModule('test.script.OtherClass', DynamicModule.fromString(env, 'OtherClass', File.getContent('test/script/OtherClass.hx')));
         #end
 
         env.link();
@@ -281,6 +286,78 @@ class Host {
         var dynInst = dynClass.createInstance();
         dynInst.set('mVar6', 3000);
         Sys.println('' + dynInst.get('mVar6'));
+        #end
+
+        #if host_test_37
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.call('nativeGroupClass1IsClass1'));
+        #end
+
+        #if host_test_38
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.call('nativeGroupClass1IsClass2'));
+        #end
+
+        #if host_test_39
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.call('nativeGroupClass2IsClass1'));
+        #end
+
+        #if host_test_40
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.call('nativeGroupClass2IsClass2'));
+        #end
+
+        #if host_test_41
+        var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
+        Sys.println('' + dynClass.call('nativeGroupClass1IsClass1'));
+        #end
+
+        #if host_test_42
+        var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
+        Sys.println('' + dynClass.call('nativeGroupClass2IsClass1'));
+        #end
+
+        #if host_test_43
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.call('nativeGroupClass1StaticMethod1'));
+        #end
+
+        #if host_test_44
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        Sys.println('' + dynClass.call('nativeGroupClass2StaticMethod2'));
+        #end
+
+        #if host_test_45
+        var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
+        Sys.println('' + dynClass.call('nativeGroupClass1StaticMethod1'));
+        #end
+
+        #if host_test_46
+        var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
+        Sys.println('' + dynClass.call('nativeGroupClass2StaticMethod2'));
+        #end
+
+        #if host_test_47
+        var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
+        Sys.println('' + dynClass.createInstance().get('name'));
+        #end
+
+        #if host_test_48
+        var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
+        Sys.println('' + dynClass.createInstance().get('age'));
+        #end
+
+        #if host_test_49
+        var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
+        var args:Array<Dynamic> = ['Jon', 21];
+        Sys.println('' + dynClass.createInstance(args).get('name'));
+        #end
+
+        #if host_test_50
+        var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
+        var args:Array<Dynamic> = ['Jon', 21];
+        Sys.println('' + dynClass.createInstance(args).get('age'));
         #end
 
     } //main

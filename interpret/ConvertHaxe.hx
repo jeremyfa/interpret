@@ -1044,7 +1044,7 @@ class ConvertHaxe {
 
         // TODO proper error formatting
 
-        trace(code.substr(pos, 100));
+        trace(error + ' (' + code.substr(pos, 100) + ')');
 
         throw '' + error;
 
@@ -1227,7 +1227,7 @@ class ConvertHaxe {
 
     static var RE_CAST = ~/^cast(?:\s*(\())?/;
 
-    static var RE_NEW = ~/^new\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?\s*\(/;
+    static var RE_NEW = ~/^new\s+((?:[a-zA-Z_][a-zA-Z_0-9]*\.)*[a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?\s*\(/;
 
     static var RE_CLASS_DECL = ~/^class\s+([a-zA-Z_][a-zA-Z_0-9]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?([^{]*)\s*{/;
 

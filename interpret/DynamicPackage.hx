@@ -27,7 +27,7 @@ class DynamicPackage {
 
         // Resolve type
         var fullPath = path + '.' + subPath;
-        
+
         var module = env.modules.get(fullPath);
         if (module != null) {
             var resolved = module.items.get(fullPath);
@@ -36,6 +36,7 @@ class DynamicPackage {
                 resolvedSubs.set(subPath, resolved);
                 return resolved;
             }
+            return module;
         }
 
         // Resolve sub-package
