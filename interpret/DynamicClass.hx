@@ -80,7 +80,7 @@ class DynamicClass {
 
     public function createInstance(?args:Array<Dynamic>) {
 
-        if (interpreter == null) init();
+        initIfNeeded();
 
         var instance = new DynamicInstance(this);
         instance.init(args);
@@ -91,7 +91,7 @@ class DynamicClass {
 
     public function get(name:String):Dynamic {
 
-        if (interpreter == null) init();
+        initIfNeeded();
 
         var prevSelf = interpreter._self;
         interpreter._self = context;
@@ -106,7 +106,7 @@ class DynamicClass {
 
     public function exists(name:String):Dynamic {
 
-        if (interpreter == null) init();
+        initIfNeeded();
 
         var prevUnresolved = interpreter._unresolved;
         interpreter._unresolved = Unresolved.UNRESOLVED;
@@ -121,7 +121,7 @@ class DynamicClass {
 
     public function set(name:String, value:Dynamic):Dynamic {
 
-        if (interpreter == null) init();
+        initIfNeeded();
 
         var prevSelf = interpreter._self;
         interpreter._self = context;
@@ -136,7 +136,7 @@ class DynamicClass {
 
     public function call(name:String, ?args:Array<Dynamic>):Dynamic {
 
-        if (interpreter == null) init();
+        initIfNeeded();
 
         var prevSelf = interpreter._self;
         
@@ -408,7 +408,16 @@ class DynamicClass {
 
     } //computeHscript
 
+    inline public function initIfNeeded() {
+
+        if (interpreter == null) init();
+
+    } //initIfNeeded
+
     function init() {
+
+        // Don't init multiple times but cope with calling init multiple times
+        if (interpreter != null) return;
 
         // Create context
         context = new Map();

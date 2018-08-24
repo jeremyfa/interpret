@@ -141,6 +141,7 @@ class Env {
             if (module.pack != null && module.pack != '') {
                 className = className.substring(module.pack.length + 1);
             }
+            var baseClassName = className;
             var dynClass = module.dynamicClasses.get(className);
             if (dynClass != null) {
                 resolvedDynamicClasses.set(name, dynClass);
@@ -152,7 +153,16 @@ class Env {
                 if (module.pack != null && module.pack != '') {
                     className = className.substring(module.pack.length + 1);
                 }
-                dynClass = module.dynamicClasses.get(alias);
+                dynClass = module.dynamicClasses.get(className);
+                if (dynClass != null) {
+                    resolvedDynamicClasses.set(name, dynClass);
+                    return dynClass;
+                }
+            }
+            var dotIndex = baseClassName.lastIndexOf('.');
+            if (dotIndex != -1) {
+                className = baseClassName.substr(dotIndex + 1);
+                dynClass = module.dynamicClasses.get(className);
                 if (dynClass != null) {
                     resolvedDynamicClasses.set(name, dynClass);
                     return dynClass;

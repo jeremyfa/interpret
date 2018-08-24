@@ -188,7 +188,27 @@ class Test extends buddy.SingleSuite {
         
         });
 
-        describe("Module with multiple types", {
+        describe('Constructor and arguments', {
+
+            it("new OtherClass().name -> 'Paul'", {
+                run('other_class test_47').should.be('Paul');
+            });
+
+            it("new OtherClass().age -> -1", {
+                run('other_class test_48').should.be('-1');
+            });
+
+            it("new OtherClass('Jon', 21).name -> 'Jon'", {
+                run('other_class test_49').should.be('Jon');
+            });
+
+            it("new OtherClass('Jon', 21).age -> 21", {
+                run('other_class test_50').should.be('21');
+            });
+
+        });
+
+        describe("Native module with multiple types", {
 
             it("new test.native.NativeGroup.Class1().isClass1() -> true", {
                 run('native_group basic_class test_37').should.be('true');
@@ -232,28 +252,53 @@ class Test extends buddy.SingleSuite {
 
         });
 
-        describe('Constructor and arguments', {
+        describe("Interpreted module with multiple types", {
 
-            it("new OtherClass().name -> 'Paul'", {
-                run('other_class test_47').should.be('Paul');
+            it("new test.script.InterpretedGroup.Class1().isClass1() -> true", {
+                run('interpreted_group alt_class test_51').should.be('true');
             });
 
-            it("new OtherClass().age -> -1", {
-                run('other_class test_48').should.be('-1');
+            it("new test.script.InterpretedGroup.Class1().isClass2() -> false", {
+                run('interpreted_group alt_class test_52').should.be('false');
             });
 
-            it("new OtherClass('Jon', 21).name -> 'Jon'", {
-                run('other_class test_49').should.be('Jon');
+            it("new Class2().isClass1() -> false", {
+                run('interpreted_group alt_class test_53').should.be('false');
             });
 
-            it("new OtherClass('Jon', 21).age -> 21", {
-                run('other_class test_50').should.be('21');
+            it("new Class2().isClass2() -> true", {
+                run('interpreted_group alt_class test_54').should.be('true');
+            });
+
+            it("new Class1().isClass1() -> true", {
+                run('interpreted_group another_class test_55').should.be('true');
+            });
+
+            it("new Class2().isClass1() -> false", {
+                run('interpreted_group another_class test_56').should.be('false');
+            });
+
+            it("test.script.InterpretedGroup.Class1.staticMethod1() -> 'static1'", {
+                run('interpreted_group alt_class test_57').should.be('static1');
+            });
+
+            it("Class2.staticMethod2() -> 'static2'", {
+                run('interpreted_group alt_class test_58').should.be('static2');
+            });
+
+            it("Class1.staticMethod1() -> 'static1'", {
+                run('interpreted_group another_class test_59').should.be('static1');
+            });
+
+            it("Class2.staticMethod2() -> 'static2'", {
+                run('interpreted_group another_class test_60').should.be('static2');
             });
 
         });
 
             // OK constructor with arguments
             // OK module with multiple types (native)
+            // TODO module with multiple types and module type included (native & interpreted)
             // TODO module with multiple types (interpreted)
             // TODO test.script.SomeClass.SomeSubClass
             // TODO call static method from instance method

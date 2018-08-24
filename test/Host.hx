@@ -66,6 +66,18 @@ class Host {
         #if host_other_class
         env.addModule('test.script.OtherClass', DynamicModule.fromString(env, 'OtherClass', File.getContent('test/script/OtherClass.hx')));
         #end
+        
+        #if host_alt_class
+        env.addModule('test.script.AltClass', DynamicModule.fromString(env, 'AltClass', File.getContent('test/script/AltClass.hx')));
+        #end
+        
+        #if host_another_class
+        env.addModule('test.script.AnotherClass', DynamicModule.fromString(env, 'AnotherClass', File.getContent('test/script/AnotherClass.hx')));
+        #end
+        
+        #if host_interpreted_group
+        env.addModule('test.script.InterpretedGroup', DynamicModule.fromString(env, 'InterpretedGroup', File.getContent('test/script/InterpretedGroup.hx')));
+        #end
 
         env.link();
 
@@ -358,6 +370,56 @@ class Host {
         var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
         var args:Array<Dynamic> = ['Jon', 21];
         Sys.println('' + dynClass.createInstance(args).get('age'));
+        #end
+
+        #if host_test_51
+        var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass1IsClass1'));
+        #end
+
+        #if host_test_52
+        var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass1IsClass2'));
+        #end
+
+        #if host_test_53
+        var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass2IsClass1'));
+        #end
+
+        #if host_test_54
+        var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass2IsClass2'));
+        #end
+
+        #if host_test_55
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass1IsClass1'));
+        #end
+
+        #if host_test_56
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass2IsClass1'));
+        #end
+
+        #if host_test_57
+        var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass1StaticMethod1'));
+        #end
+
+        #if host_test_58
+        var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass2StaticMethod2'));
+        #end
+
+        #if host_test_59
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass1StaticMethod1'));
+        #end
+
+        #if host_test_60
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass2StaticMethod2'));
         #end
 
     } //main

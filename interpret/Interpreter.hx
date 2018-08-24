@@ -431,6 +431,7 @@ class Interpreter extends hscript.Interp {
         }
         else if (Std.is(o, DynamicClass)) {
             var dynClass:DynamicClass = cast o;
+            dynClass.initIfNeeded();
             var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
             dynClass.interpreter._queryingInterpreter = this;
             var result = dynClass.get(f);
@@ -450,7 +451,8 @@ class Interpreter extends hscript.Interp {
         }
         else if (Std.is(o, DynamicModule)) {
             var dynMod:DynamicModule = cast o;
-            return unwrap(dynMod.items.get(dynMod.typePath + '.' + f));
+            var result = dynMod.items.get(dynMod.typePath + '.' + f);
+            return unwrap(result);
         }
         return super.get(o, f);
 
@@ -525,6 +527,7 @@ class Interpreter extends hscript.Interp {
         }
         else if (Std.is(o, DynamicClass)) {
             var dynClass:DynamicClass = cast o;
+            dynClass.initIfNeeded();
             var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
             dynClass.interpreter._queryingInterpreter = this;
             var result = dynClass.set(f, v);
