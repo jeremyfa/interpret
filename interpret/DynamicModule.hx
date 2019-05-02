@@ -385,7 +385,7 @@ class DynamicModule {
             interfaceExprs.push(expr);
         }
 
-        var result = macro function() {
+        var result = macro (function() {
             var module = new interpret.DynamicModule();
             module.pack = $v{packString};
             $b{aliasExprs};
@@ -393,7 +393,7 @@ class DynamicModule {
             $b{interfaceExprs};
             module.lazyLoad = function(mod) $b{addExprs};
             return module;
-        }();
+        })();
 
         //trace(new haxe.macro.Printer().printExpr(result));
 

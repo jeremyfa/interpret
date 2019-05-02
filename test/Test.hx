@@ -298,8 +298,9 @@ class Test extends buddy.SingleSuite {
 
             // OK constructor with arguments
             // OK module with multiple types (native)
+            // OK module with multiple types (interpreted)
+
             // TODO module with multiple types and module type included (native & interpreted)
-            // TODO module with multiple types (interpreted)
             // TODO test.script.SomeClass.SomeSubClass
             // TODO call static method from instance method
             // TODO call static method from static method

@@ -7,3 +7,5 @@
 /test.js.map
 /host.js
 /host.js.map
+.DS_Store
+/dump

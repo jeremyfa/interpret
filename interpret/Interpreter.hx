@@ -210,7 +210,7 @@ class Interpreter extends hscript.Interp {
 
 		var v = expr(e2);
         
-		switch( edef(e1) ) {
+		switch( hscript.Tools.expr(e1) ) {
 		case EIdent(id):
 			var l = locals.get(id);
 			if( l == null ) {

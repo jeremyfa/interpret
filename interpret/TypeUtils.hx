@@ -1,5 +1,6 @@
 package interpret;
 
+import haxe.Constraints.IMap;
 import interpret.Types;
 
 using StringTools;
@@ -23,7 +24,7 @@ class TypeUtils {
         if (Std.is(obj, Float)) return 'Float';
         if (Std.is(obj, Bool)) return 'Bool';
         if (Std.is(obj, Array)) return 'Array';
-        if (Std.is(obj, Map)) return 'Map';
+        if (Std.is(obj, IMap)) return 'Map';
 
         if (Std.is(obj, DynamicClass)) {
             var c:DynamicClass = cast obj;

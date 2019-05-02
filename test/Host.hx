@@ -31,7 +31,7 @@ class Host {
         env.addModule('test.native.NativeInterface', DynamicModule.fromStatic(test.native.NativeInterface));
         env.addModule('test.native.NativeGroup', DynamicModule.fromStatic(test.native.NativeGroup));
         #if (sys || nodejs)
-        env.addModule('Sys', DynamicModule.fromStatic(Sys));
+        //env.addModule('Sys', DynamicModule.fromStatic(Sys));
         #end
 
         // Modules from interpreted code
