@@ -254,6 +254,10 @@ class DynamicModule {
                 case TInst(t, params):
                     // Type
                     var rawTypePath = t.toString();
+
+                    // Workaround needed on haxe 4?
+                    if (rawTypePath.startsWith('_Sys.')) continue;
+
                     var subTypePath = rawTypePath;
                     if (rawTypePath != typePath) {
                         subTypePath = typePath + rawTypePath.substring(rawTypePath.lastIndexOf('.'));
