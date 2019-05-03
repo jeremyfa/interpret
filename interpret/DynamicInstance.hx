@@ -245,7 +245,7 @@ class DynamicInstance {
         interpreter._classSelf = prevClassSelf;
 
         if (method == null) {
-            throw 'Instance method not found: $name';
+            throw 'Instance method not found: $this $name';
         }
 
         var rawRes = Reflect.callMethod(null, method, args != null ? args : NO_ARGS);

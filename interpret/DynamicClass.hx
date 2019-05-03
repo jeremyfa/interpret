@@ -221,7 +221,7 @@ class DynamicClass {
         interpreter._self = prevSelf;
 
         if (method == null) {
-            throw 'Class method not found: $name';
+            throw 'Class method not found: $this $name';
         }
         var rawRes = Reflect.callMethod(null, method, args != null ? args : NO_ARGS);
         return unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
