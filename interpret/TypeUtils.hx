@@ -128,6 +128,7 @@ class TypeUtils {
     public static function unwrap(value:Dynamic, ?env:Env):Dynamic {
 
         if (value == null) return null;
+        if (value == Unresolved.UNRESOLVED) return null;
 
         if (Std.is(value, RuntimeItem)) {
             var item:RuntimeItem = cast value;

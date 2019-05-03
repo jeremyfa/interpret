@@ -142,7 +142,7 @@ class Env {
                 className = className.substring(module.pack.length + 1);
             }
             var baseClassName = className;
-            var dynClass = module.dynamicClasses.get(className);
+            var dynClass = module.dynamicClasses != null ? module.dynamicClasses.get(className) : null;
             if (dynClass != null) {
                 resolvedDynamicClasses.set(name, dynClass);
                 return dynClass;

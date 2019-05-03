@@ -7,6 +7,8 @@ import interpret.ConvertHaxe;
 import hscript.Expr as HscriptExpr;
 import hscript.Parser as HscriptParser;
 
+using StringTools;
+
 /** A class loaded at runtime from a haxe-compatible source file.
     Tries to stay as close as possible to haxe syntax.
     Works by converting the provided haxe source code into hscript code,
@@ -29,6 +31,14 @@ class DynamicClass {
 
     public var env(default,null):Env;
 
+    var didComputeSuperClass:Bool = false;
+
+    var superDynamicClass:DynamicClass = null;
+
+    var superStaticClass:Class<Dynamic> = null;
+
+    var superStaticClassInstanceFields:Map<String,Bool> = null;
+
     var interpreter:Interpreter = null;
 
     var classProgram:HscriptExpr;
@@ -39,15 +49,23 @@ class DynamicClass {
 
     var classSetters:Map<String,Bool>;
 
+    var classMethods:Map<String,Bool>;
+
+    var classVars:Map<String,Bool>;
+
     var instanceGetters:Map<String,Bool>;
 
     var instanceSetters:Map<String,Bool>;
+
+    var instanceMethods:Map<String,Bool>;
+
+    var instanceVars:Map<String,Bool>;
 
     var options:DynamicClassOptions;
 
     var className:String = null;
 
-    var classProperties:Array<String>;
+    var classPropertyList:Array<String>;
 
     var instanceProperties:Array<String>;
 
@@ -89,14 +107,39 @@ class DynamicClass {
 
     } //createInstance
 
-    public function get(name:String):Dynamic {
+    public function get(name:String, unwrap:Bool = true):Dynamic {
 
         initIfNeeded();
+
+        if (!classVars.exists(name) && !classMethods.exists(name)) {
+            if (superDynamicClass != null || superStaticClass == null) {
+                var superClass = this.superDynamicClass;
+                var exists = false;
+                while (superClass != null) {
+                    if (superClass.classVars.exists(name) || superClass.classMethods.exists(name)) {
+                        exists = true;
+                        break;
+                    }
+                    if (superClass.superDynamicClass == null && superClass.superStaticClass != null) {
+                        exists = true; // We assume we are calling something on native that exists
+                        break;
+                    }
+                    superClass = superClass.superDynamicClass;
+                }
+                if (!exists) {
+                    return unwrap ? null : Unresolved.UNRESOLVED;
+                }
+            }
+            else if (!Reflect.hasField(superStaticClass, name)) {
+                return unwrap ? null : Unresolved.UNRESOLVED;
+            }
+        }
 
         var prevSelf = interpreter._self;
         interpreter._self = context;
 
-        var result = TypeUtils.unwrap(interpreter.get(context, name), env);
+        var rawRes = interpreter.get(context, name);
+        var result = unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
 
         interpreter._self = prevSelf;
 
@@ -104,9 +147,39 @@ class DynamicClass {
 
     } //get
 
-    public function exists(name:String):Dynamic {
+    public function isMethod(name:String):Bool {
+
+        return classMethods.exists(name);
+
+    } //isMethod
+
+    public function exists(name:String):Bool {
 
         initIfNeeded();
+
+        if (!classVars.exists(name) && !classMethods.exists(name)) {
+            if (superDynamicClass != null || superStaticClass == null) {
+                var superClass = this.superDynamicClass;
+                var exists = false;
+                while (superClass != null) {
+                    if (superClass.classVars.exists(name) || superClass.classMethods.exists(name)) {
+                        exists = true;
+                        break;
+                    }
+                    if (superClass.superDynamicClass == null && superClass.superStaticClass != null) {
+                        exists = true; // We assume we are calling something on native that exists
+                        break;
+                    }
+                    superClass = superClass.superDynamicClass;
+                }
+                if (!exists) {
+                    return false;
+                }
+            }
+            else if (!Reflect.hasField(superStaticClass, name)) {
+                return false;
+            }
+        }
 
         var prevUnresolved = interpreter._unresolved;
         interpreter._unresolved = Unresolved.UNRESOLVED;
@@ -117,16 +190,17 @@ class DynamicClass {
 
         return result != Unresolved.UNRESOLVED;
 
-    } //has
+    } //exists
 
-    public function set(name:String, value:Dynamic):Dynamic {
+    public function set(name:String, value:Dynamic, unwrap:Bool = true):Dynamic {
 
         initIfNeeded();
 
         var prevSelf = interpreter._self;
         interpreter._self = context;
 
-        var result = TypeUtils.unwrap(interpreter.set(context, name, value), env);
+        var rawRes = interpreter.set(context, name, value);
+        var result = unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
 
         interpreter._self = prevSelf;
 
@@ -134,7 +208,7 @@ class DynamicClass {
 
     } //set
 
-    public function call(name:String, ?args:Array<Dynamic>):Dynamic {
+    public function call(name:String, ?args:Array<Dynamic>, unwrap:Bool = true):Dynamic {
 
         initIfNeeded();
 
@@ -149,7 +223,8 @@ class DynamicClass {
         if (method == null) {
             throw 'Class method not found: $name';
         }
-        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? args : NO_ARGS), env);
+        var rawRes = Reflect.callMethod(null, method, args != null ? args : NO_ARGS);
+        return unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
 
     } //call
 
@@ -181,9 +256,13 @@ class DynamicClass {
         var usingsReady = false;
         classGetters = new Map();
         classSetters = new Map();
+        classMethods = new Map();
+        classVars = new Map();
         instanceGetters = new Map();
         instanceSetters = new Map();
-        classProperties = [];
+        instanceMethods = new Map();
+        instanceVars = new Map();
+        classPropertyList = [];
         instanceProperties = [];
         packagePath = null;
 
@@ -255,7 +334,8 @@ class DynamicClass {
                 case TField(data):
                     if (data.kind == VAR) {
                         if (modifiers.exists('static')) {
-                            classProperties.push(data.name);
+                            classVars.set(data.name, true);
+                            classPropertyList.push(data.name);
                             if (data.get == 'get') {
                                 classGetters.set(data.name, true);
                             }
@@ -264,6 +344,7 @@ class DynamicClass {
                             }
                             if (data.expr != null) staticDefaults.push([data.name, data.expr]);
                         } else {
+                            instanceVars.set(data.name, true);
                             instanceProperties.push(data.name);
                             if (data.get == 'get') {
                                 instanceGetters.set(data.name, true);
@@ -329,6 +410,12 @@ class DynamicClass {
                     if (data.kind == METHOD) {
                         var isStatic = modifiers.exists('static');
                         var result = isStatic ? classResult : instanceResult;
+                        if (isStatic) {
+                            classMethods.set(data.name, true);
+                        }
+                        else {
+                            instanceMethods.set(data.name, true);
+                        }
                         result.add(indent);
                         result.add('function ');
                         result.add(data.name);
@@ -384,6 +471,9 @@ class DynamicClass {
         classHscript = classResult.toString();
         instanceHscript = instanceResult.toString();
 
+        //trace('CLASS($className) $classHscript');
+        //trace('INSTANCE($className) $instanceHscript');
+
         // Create class path
         instanceType = className;
         if (packagePath != null && packagePath != '') {
@@ -408,6 +498,69 @@ class DynamicClass {
 
     } //computeHscript
 
+    function computeSuperClass() {
+
+        didComputeSuperClass = true;
+        var superClassType = env.getSuperClass(instanceType);
+        if (superClassType != null) {
+            var module:DynamicModule = null;
+            var prefix = superClassType + '.';
+            var alias = env.aliases.get(superClassType);
+            var aliasPrefix = alias + '.';
+            for (modulePath in env.modules.keys()) {
+                if (modulePath == superClassType || modulePath.startsWith(prefix)) {
+                    module = env.modules.get(modulePath);
+                    break;
+                }
+                if (alias != null) {
+                    if (modulePath == alias || modulePath.startsWith(aliasPrefix)) {
+                        module = env.modules.get(modulePath);
+                        break;
+                    }
+                }
+            }
+            if (module != null) {
+                var targetItem:RuntimeItem = null;
+                targetItem = module.items.get(superClassType);
+                if (alias != null) {
+                    targetItem = module.items.get(alias);
+                }
+                if (targetItem != null) {
+                    switch (targetItem) {
+                        case ClassItem(rawItem, moduleId, name):
+                            superDynamicClass = env.resolveDynamicClass(moduleId, name);
+
+                            if (superDynamicClass == null) {
+                                var prevSelf = interpreter._self;
+                                interpreter._self = context;
+                                superStaticClass = interpreter.resolveClass(name);
+                                interpreter._self = prevSelf;
+                            }
+
+                        default:
+                    }
+                }
+            }
+        }
+
+    } //computeSuperClass
+
+    function superStaticClassHasInstanceField(name:String):Bool {
+
+        if (superStaticClass == null) return null;
+
+        if (superStaticClassInstanceFields == null) {
+            var list = Type.getInstanceFields(superStaticClass);
+            superStaticClassInstanceFields = new Map();
+            for (i in 0...list.length) {
+                superStaticClassInstanceFields.set(list[i], true);
+            }
+        }
+
+        return superStaticClassInstanceFields.exists(name);
+
+    } //superStaticClassHasInstanceField
+
     inline public function initIfNeeded() {
 
         if (interpreter == null) init();
@@ -422,6 +575,7 @@ class DynamicClass {
         // Create context
         context = new Map();
         context.set('__interpretType', classType);
+        context.set('__interpretClass', this);
         if (_contextType == null) _contextType = Type.getClass(context);
         _contextArgs = [context];
 
@@ -433,7 +587,7 @@ class DynamicClass {
 
         // Set all properties to null
         // Will ensure their key exists in variables map
-        for (prop in classProperties) {
+        for (prop in classPropertyList) {
             context.set(prop, null);
         }
 
@@ -446,6 +600,12 @@ class DynamicClass {
 
         // Assign setters
         interpreter.setters = classSetters;
+
+        // Compute super class
+        if (!didComputeSuperClass) computeSuperClass();
+        if (superDynamicClass != null) {
+            instanceVars.set('super', true);
+        }
 
     } //init
 

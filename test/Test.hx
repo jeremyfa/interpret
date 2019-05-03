@@ -296,12 +296,33 @@ class Test extends buddy.SingleSuite {
 
         });
 
+        describe("Various calls", {
+
+            it("test.script.InterpretedGroup.Class2.staticMethod3() -> 'static3'", {
+                run('interpreted_group another_class test_61').should.be('static3');
+            });
+
+            it("test.script.InterpretedGroup.Class2.instanceMethod1() -> true", {
+                run('interpreted_group another_class test_62').should.be('true');
+            });
+
+            it("new AnotherClass().interpretedGroupFromInstanceClass1StaticMethod1() -> 'static1'", {
+                run('interpreted_group another_class test_63').should.be('static1');
+            });
+
+            it("new AnotherClass().interpretedGroupFromInstanceClass1StaticMethod2() -> 'static1'", {
+                run('interpreted_group another_class test_64').should.be('static1');
+            });
+
+        });
+
             // OK constructor with arguments
             // OK module with multiple types (native)
             // OK module with multiple types (interpreted)
 
-            // TODO module with multiple types and module type included (native & interpreted)
-            // TODO test.script.SomeClass.SomeSubClass
+            // OK? module with multiple types and module type included (native & interpreted)
+
+            // OK test.script.SomeClass.SomeSubClass
             // TODO call static method from instance method
             // TODO call static method from static method
             // TODO call instance method from instance method

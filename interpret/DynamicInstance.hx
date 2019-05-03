@@ -92,6 +92,25 @@ class DynamicInstance {
                 }
                 if (targetItem != null) {
                     interpreter.variables.set('super', SuperClassItem(targetItem));
+                    switch (targetItem) {
+                        case ClassItem(rawItem, moduleId, name):
+                            //trace('ADD SUPER NEW');
+                            var superClass = env.resolveDynamicClass(moduleId, name);
+                            interpreter.variables.set('__super_new', Reflect.makeVarArgs(function(args) {
+                                var superClassItem:RuntimeItem = interpreter.variables.get('super');
+                                switch (superClassItem) {
+                                    case SuperClassItem(ClassItem(rawItem, moduleId, name)):
+                                        if (rawItem != null) {
+                                            var superInstance = Type.createInstance(rawItem, args);
+                                            context.set('super', superInstance);
+                                            return superInstance;
+                                        }
+                                    default:
+                                }
+                                return interpreter.call(null, superClassItem, args);
+                            }));
+                        default:
+                    }
                 }
             }
         }
@@ -106,14 +125,42 @@ class DynamicInstance {
 
 /// Public API
 
-    public function get(name:String):Dynamic {
+    public function get(name:String, unwrap:Bool = true):Dynamic {
+
+        var useSuperClass = null;
+
+        if (!dynamicClass.instanceVars.exists(name) && !dynamicClass.instanceMethods.exists(name)) {
+            if (dynamicClass.superDynamicClass != null || dynamicClass.superStaticClass == null) {
+                var superClass = dynamicClass.superDynamicClass;
+                var exists = false;
+                while (superClass != null) {
+                    if (superClass.instanceVars.exists(name) || superClass.instanceMethods.exists(name)) {
+                        exists = true;
+                        useSuperClass = superClass;
+                        break;
+                    }
+                    if (superClass.superDynamicClass == null && superClass.superStaticClass != null) {
+                        exists = true; // We assume we are calling something on native that exists
+                        break;
+                    }
+                    superClass = superClass.superDynamicClass;
+                }
+                if (!exists) {
+                    return unwrap ? null : Unresolved.UNRESOLVED;
+                }
+            }
+            else if (!dynamicClass.superStaticClassHasInstanceField(name)) {
+                return unwrap ? null : Unresolved.UNRESOLVED;
+            }
+        }
 
         var prevSelf = interpreter._self;
         var prevClassSelf = interpreter._classSelf;
         interpreter._self = context;
-        interpreter._classSelf = dynamicClass.context;
+        interpreter._classSelf = useSuperClass != null ? useSuperClass.context : dynamicClass.context;
 
-        var result = TypeUtils.unwrap(interpreter.get(context, name), dynamicClass.env);
+        var rawRes = interpreter.get(context, name);
+        var result = unwrap ? TypeUtils.unwrap(rawRes, dynamicClass.env) : rawRes;
 
         interpreter._self = prevSelf;
         interpreter._classSelf = prevClassSelf;
@@ -122,7 +169,37 @@ class DynamicInstance {
 
     } //get
 
-    public function exists(name:String):Dynamic {
+    public function isMethod(name:String):Bool {
+
+        return dynamicClass.instanceMethods.exists(name);
+
+    } //isMethod
+
+    public function exists(name:String):Bool {
+
+        if (!dynamicClass.instanceVars.exists(name) && !dynamicClass.instanceMethods.exists(name)) {
+            if (dynamicClass.superDynamicClass != null || dynamicClass.superStaticClass == null) {
+                var superClass = dynamicClass.superDynamicClass;
+                var exists = false;
+                while (superClass != null) {
+                    if (superClass.instanceVars.exists(name) || superClass.instanceMethods.exists(name)) {
+                        exists = true;
+                        break;
+                    }
+                    if (superClass.superDynamicClass == null && superClass.superStaticClass != null) {
+                        exists = true; // We assume we are calling something on native that exists
+                        break;
+                    }
+                    superClass = superClass.superDynamicClass;
+                }
+                if (!exists) {
+                    return false;
+                }
+            }
+            else if (!dynamicClass.superStaticClassHasInstanceField(name)) {
+                return false;
+            }
+        }
 
         var prevUnresolved = interpreter._unresolved;
         interpreter._unresolved = Unresolved.UNRESOLVED;
@@ -133,16 +210,17 @@ class DynamicInstance {
 
         return result != Unresolved.UNRESOLVED;
 
-    } //has
+    } //exists
 
-    public function set(name:String, value:Dynamic):Dynamic {
+    public function set(name:String, value:Dynamic, unwrap:Bool = true):Dynamic {
 
         var prevSelf = interpreter._self;
         var prevClassSelf = interpreter._classSelf;
         interpreter._self = context;
         interpreter._classSelf = dynamicClass.context;
 
-        var result = TypeUtils.unwrap(interpreter.set(context, name, value), dynamicClass.env);
+        var rawRes = interpreter.set(context, name, value);
+        var result = unwrap ? TypeUtils.unwrap(rawRes, dynamicClass.env) : rawRes;
 
         interpreter._self = prevSelf;
         interpreter._classSelf = prevClassSelf;
@@ -151,7 +229,7 @@ class DynamicInstance {
 
     } //set
 
-    public function call(name:String, ?args:Array<Dynamic>):Dynamic {
+    public function call(name:String, ?args:Array<Dynamic>, unwrap:Bool = true):Dynamic {
 
         var prevSelf = interpreter._self;
         var prevClassSelf = interpreter._classSelf;
@@ -159,7 +237,9 @@ class DynamicInstance {
         interpreter._self = context;
         interpreter._classSelf = dynamicClass.context;
 
-        var method = interpreter.get(context, name);
+        //trace('call $this / $name / $args');
+
+        var method:Dynamic = interpreter.get(context, name);
 
         interpreter._self = prevSelf;
         interpreter._classSelf = prevClassSelf;
@@ -167,7 +247,9 @@ class DynamicInstance {
         if (method == null) {
             throw 'Instance method not found: $name';
         }
-        return TypeUtils.unwrap(Reflect.callMethod(null, method, args != null ? args : NO_ARGS), dynamicClass.env);
+
+        var rawRes = Reflect.callMethod(null, method, args != null ? args : NO_ARGS);
+        return unwrap ? TypeUtils.unwrap(rawRes, dynamicClass.env) : rawRes;
 
     } //call
 

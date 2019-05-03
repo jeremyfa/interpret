@@ -422,6 +422,26 @@ class Host {
         Sys.println('' + dynClass.call('interpretedGroupClass2StaticMethod2'));
         #end
 
+        #if host_test_61
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass2StaticMethod3'));
+        #end
+
+        #if host_test_62
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('interpretedGroupClass2InstanceMethod1'));
+        #end
+
+        #if host_test_63
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.createInstance().call('interpretedGroupFromInstanceClass1StaticMethod1'));
+        #end
+
+        #if host_test_64
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.createInstance().call('interpretedGroupFromInstanceClass1StaticMethod2'));
+        #end
+
     } //main
 
 } //Host

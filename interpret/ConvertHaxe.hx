@@ -338,6 +338,15 @@ class ConvertHaxe {
                 if (MODIFIERS.exists(word)) {
                     i += word.length;
                 }
+                else if (word == 'super') {
+                    i += word.length;
+                    if (RE_SUPER_CONSTRUCTOR_CALL.match(cleanedAfter)) {
+                        _expr.add('__super_new');
+                    }
+                    else {
+                        _expr.add('super');
+                    }
+                }
                 else if (word == 'var' || word == 'final') {
                     consumeVar(_expr);
                 }
@@ -1242,5 +1251,7 @@ class ConvertHaxe {
     static var RE_TYPE_WITH_PARAM = ~/^([a-zA-Z_][a-zA-Z_0-9]*)\s*<([a-zA-Z0-9,<>_:?()\s-]+)>/;
 
     static var RE_CLASS_PARENT = ~/^\s*(implements|extends)\s+((?:[a-zA-Z_][a-zA-Z_0-9\.]*)(?:\s*<[a-zA-Z0-9,<>_:?()\s-]+>)?)/;
+
+    static var RE_SUPER_CONSTRUCTOR_CALL = ~/^super\s*\(/;
 
 } //HaxeToHscript

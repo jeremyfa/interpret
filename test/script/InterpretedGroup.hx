@@ -50,4 +50,10 @@ class Class2 {
 
     } //staticMethod2
 
+    public static function staticMethod3() {
+
+        return 'static3';
+
+    } //staticMethod3
+
 } //Class2

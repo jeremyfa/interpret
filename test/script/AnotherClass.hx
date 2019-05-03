@@ -32,4 +32,29 @@ class AnotherClass {
 
     } //interpretedGroupClass1StaticMethod2
 
+    public static function interpretedGroupClass2StaticMethod3() {
+
+        return test.script.InterpretedGroup.Class2.staticMethod3();
+
+    } //interpretedGroupClass2StaticMethod3
+
+    public static function interpretedGroupClass2InstanceMethod1() {
+
+        var instance = new test.script.InterpretedGroup.Class2();
+        return instance.isClass2();
+
+    } //interpretedGroupClass2InstanceMethod1
+
+    public function interpretedGroupFromInstanceClass1StaticMethod1() {
+
+        return AnotherClass.interpretedGroupClass1StaticMethod1();
+
+    } //interpretedGroupFromInstanceClass1StaticMethod1
+
+    public function interpretedGroupFromInstanceClass1StaticMethod2() {
+
+        return interpretedGroupClass1StaticMethod1();
+
+    } //interpretedGroupFromInstanceClass1StaticMethod2
+
 } //AnotherClass
