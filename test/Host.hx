@@ -442,6 +442,16 @@ class Host {
         Sys.println('' + dynClass.createInstance().call('interpretedGroupFromInstanceClass1StaticMethod2'));
         #end
 
+        #if host_test_65
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('interpretedGroupFromStaticClass1StaticMethod1'));
+        #end
+
+        #if host_test_66
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('interpretedGroupFromStaticClass1StaticMethod2'));
+        #end
+
     } //main
 
 } //Host

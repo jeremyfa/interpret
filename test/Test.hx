@@ -15,7 +15,7 @@ class Test extends buddy.SingleSuite {
             untyped require('source-map-support').install();
         } catch (e:Dynamic) {}
 #end
-
+/*
         describe("Static method calls", {
 
             it("BasicClass.staticHello('Test 01') -> 'Static Hello Test 01'", {
@@ -295,10 +295,10 @@ class Test extends buddy.SingleSuite {
             });
 
         });
-
+*/
         describe("Various calls", {
 
-            it("test.script.InterpretedGroup.Class2.staticMethod3() -> 'static3'", {
+           /* it("test.script.InterpretedGroup.Class2.staticMethod3() -> 'static3'", {
                 run('interpreted_group another_class test_61').should.be('static3');
             });
 
@@ -312,6 +312,14 @@ class Test extends buddy.SingleSuite {
 
             it("new AnotherClass().interpretedGroupFromInstanceClass1StaticMethod2() -> 'static1'", {
                 run('interpreted_group another_class test_64').should.be('static1');
+            });*/
+
+            it("AnotherClass.interpretedGroupFromStaticClass1StaticMethod1() -> 'static1'", {
+                run('interpreted_group another_class test_65').should.be('static1');
+            });
+
+            it("AnotherClass.interpretedGroupFromStaticClass1StaticMethod2() -> 'static1'", {
+                run('interpreted_group another_class test_66').should.be('static1');
             });
 
         });
@@ -323,7 +331,7 @@ class Test extends buddy.SingleSuite {
             // OK? module with multiple types and module type included (native & interpreted)
 
             // OK test.script.SomeClass.SomeSubClass
-            // TODO call static method from instance method
+            // OK call static method from instance method
             // TODO call static method from static method
             // TODO call instance method from instance method
             // TODO instanciate native class in code (with args)

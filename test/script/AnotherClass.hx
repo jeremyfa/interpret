@@ -57,4 +57,16 @@ class AnotherClass {
 
     } //interpretedGroupFromInstanceClass1StaticMethod2
 
+    public static function interpretedGroupFromStaticClass1StaticMethod1() {
+
+        return AnotherClass.interpretedGroupClass1StaticMethod1();
+
+    } //interpretedGroupFromStaticClass1StaticMethod1
+
+    public static function interpretedGroupFromStaticClass1StaticMethod2() {
+
+        return interpretedGroupClass1StaticMethod1();
+
+    } //interpretedGroupFromStaticClass1StaticMethod2
+
 } //AnotherClass
