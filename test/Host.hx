@@ -63,7 +63,7 @@ class Host {
         env.addModule('test.script.ImplementingClass', DynamicModule.fromString(env, 'ImplementingClass', File.getContent('test/script/ImplementingClass.hx')));
         #end
 
-        #if host_other_class
+        #if (host_other_class || host_another_class)
         env.addModule('test.script.OtherClass', DynamicModule.fromString(env, 'OtherClass', File.getContent('test/script/OtherClass.hx')));
         #end
         
@@ -450,6 +450,36 @@ class Host {
         #if host_test_66
         var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
         Sys.println('' + dynClass.call('interpretedGroupFromStaticClass1StaticMethod2'));
+        #end
+
+        #if host_test_67
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.createInstance().call('interpretedGroupFromInstanceCallInstanceMethod1'));
+        #end
+
+        #if host_test_68
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.createInstance().call('interpretedGroupFromInstanceCallInstanceMethod2'));
+        #end
+
+        #if host_test_69
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('newNativeClass', ['another']));
+        #end
+
+        #if host_test_70
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('newNativeClass2', ['another2']));
+        #end
+
+        #if host_test_71
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('newDynamicClass', ['another3']));
+        #end
+
+        #if host_test_72
+        var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
+        Sys.println('' + dynClass.call('newDynamicClass2', ['another4']));
         #end
 
     } //main

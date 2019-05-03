@@ -10,4 +10,16 @@ class NativeClass {
 
     } //new
 
+    public function getDoubleOrigin() {
+
+        return this.origin + ' ' + origin;
+
+    } //getDoubleOrigin
+
+    public function getDoubleOrigin2() {
+
+        return '${this.origin} ' + origin;
+
+    } //getDoubleOrigin
+
 } //NativeClass

@@ -15,6 +15,12 @@ class OtherClass {
 
     } //new
 
+    public function getDoubleName():String {
+
+        return name + ' $name';
+
+    } //getDoubleName
+
     public static function nativeGroupClass1IsClass1() {
 
         return new Class1().isClass1();

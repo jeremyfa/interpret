@@ -98,10 +98,20 @@ class ResolveImports {
                 switch (mainItem) {
                     case ClassFieldItem(_) | ExtensionItem(_, _) | EnumFieldItem(_, _, _):
                         // Class/Enum field import
-                        add(parts[parts.length-1], mainItem);
+                        if (data.alias != null) {
+                            add(data.alias, mainItem);
+                        }
+                        else {
+                            add(parts[parts.length-1], mainItem);
+                        }
                     case ClassItem(_, _) | EnumItem(_, _, _):
                         // Class/Enum import
-                        add(parts[parts.length-1], mainItem);
+                        if (data.alias != null) {
+                            add(data.alias, mainItem);
+                        }
+                        else {
+                            add(parts[parts.length-1], mainItem);
+                        }
                         loadSubItems = true;
                     default:
                         throw 'Invalid module for path: ' + data.path;

@@ -15,7 +15,7 @@ class Test extends buddy.SingleSuite {
             untyped require('source-map-support').install();
         } catch (e:Dynamic) {}
 #end
-/*
+
         describe("Static method calls", {
 
             it("BasicClass.staticHello('Test 01') -> 'Static Hello Test 01'", {
@@ -295,10 +295,10 @@ class Test extends buddy.SingleSuite {
             });
 
         });
-*/
+
         describe("Various calls", {
 
-           /* it("test.script.InterpretedGroup.Class2.staticMethod3() -> 'static3'", {
+            it("test.script.InterpretedGroup.Class2.staticMethod3() -> 'static3'", {
                 run('interpreted_group another_class test_61').should.be('static3');
             });
 
@@ -312,7 +312,7 @@ class Test extends buddy.SingleSuite {
 
             it("new AnotherClass().interpretedGroupFromInstanceClass1StaticMethod2() -> 'static1'", {
                 run('interpreted_group another_class test_64').should.be('static1');
-            });*/
+            });
 
             it("AnotherClass.interpretedGroupFromStaticClass1StaticMethod1() -> 'static1'", {
                 run('interpreted_group another_class test_65').should.be('static1');
@@ -320,6 +320,34 @@ class Test extends buddy.SingleSuite {
 
             it("AnotherClass.interpretedGroupFromStaticClass1StaticMethod2() -> 'static1'", {
                 run('interpreted_group another_class test_66').should.be('static1');
+            });
+
+            it("new AnotherClass().interpretedGroupFromInstanceCallInstanceMethod1() -> 'instance1 Doe'", {
+                run('interpreted_group another_class test_67').should.be('instance1 Doe');
+            });
+
+            it("new AnotherClass().interpretedGroupFromInstanceCallInstanceMethod2() -> 'true'", {
+                run('interpreted_group another_class test_68').should.be('true');
+            });
+
+        });
+
+        describe("Instanciate", {
+
+            it("AnotherClass.newNativeClass('another') -> 'another another'", {
+                run('interpreted_group another_class test_69').should.be('another another');
+            });
+
+            it("AnotherClass.newNativeClass2('another') -> 'another2 another2'", {
+                run('interpreted_group another_class test_70').should.be('another2 another2');
+            });
+
+            it("AnotherClass.newDynamicClass('another') -> 'another3 another3'", {
+                run('interpreted_group another_class other_class test_71').should.be('another3/-1');
+            });
+
+            it("AnotherClass.newDynamicClass2('another') -> 'another4 another4'", {
+                run('interpreted_group another_class other_class test_72').should.be('another4 another4');
             });
 
         });
@@ -332,10 +360,10 @@ class Test extends buddy.SingleSuite {
 
             // OK test.script.SomeClass.SomeSubClass
             // OK call static method from instance method
-            // TODO call static method from static method
-            // TODO call instance method from instance method
-            // TODO instanciate native class in code (with args)
-            // TODO instanciate dynamic class in code (with args)
+            // OK call static method from static method
+            // OK call instance method from instance method
+            // OK instanciate native class in code (with args)
+            // OK instanciate dynamic class in code (with args)
 
             // TODO? get property from extension getter
             // TODO? assign property from extension setter

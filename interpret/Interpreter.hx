@@ -107,6 +107,7 @@ class Interpreter extends hscript.Interp {
                 return variables.get('get_' + id)(self);
             }
         }
+
         if (self.exists(id)) {
             return self.get(id);
         }
@@ -208,6 +209,7 @@ class Interpreter extends hscript.Interp {
                 return classInterpreter.variables.get(id);
             }
         }
+
         // Resolve module item
         var moduleItem = dynamicClass.imports.resolve(id);
         if (moduleItem != null) {
@@ -681,6 +683,7 @@ class Interpreter extends hscript.Interp {
             return Type.createInstance(clazz, args);
         }
 
+        trace('cnew $clazz $cl $args');
         return super.cnew(cl, args);
 
     } //cnew
