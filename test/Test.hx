@@ -338,15 +338,15 @@ class Test extends buddy.SingleSuite {
                 run('interpreted_group another_class test_69').should.be('another another');
             });
 
-            it("AnotherClass.newNativeClass2('another') -> 'another2 another2'", {
+            it("AnotherClass.newNativeClass2('another2') -> 'another2 another2'", {
                 run('interpreted_group another_class test_70').should.be('another2 another2');
             });
 
-            it("AnotherClass.newDynamicClass('another') -> 'another3 another3'", {
+            it("AnotherClass.newDynamicClass('another3') -> 'another3/-1'", {
                 run('interpreted_group another_class other_class test_71').should.be('another3/-1');
             });
 
-            it("AnotherClass.newDynamicClass2('another') -> 'another4 another4'", {
+            it("AnotherClass.newDynamicClass2('another4') -> 'another4 another4'", {
                 run('interpreted_group another_class other_class test_72').should.be('another4 another4');
             });
 
