@@ -5,6 +5,10 @@ import interpret.DynamicModule;
 
 import sys.io.File;
 
+#if host_interpretable_some_class
+import test.interpretable.SomeClass;
+#end
+
 class Host {
 
     public static function main():Void {
@@ -480,6 +484,10 @@ class Host {
         #if host_test_72
         var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
         Sys.println('' + dynClass.call('newDynamicClass2', ['another4']));
+        #end
+
+        #if host_test_73
+        Sys.println(new SomeClass().someProp);
         #end
 
     } //main

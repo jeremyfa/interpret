@@ -15,7 +15,7 @@ class Test extends buddy.SingleSuite {
             untyped require('source-map-support').install();
         } catch (e:Dynamic) {}
 #end
-
+        /*
         describe("Static method calls", {
 
             it("BasicClass.staticHello('Test 01') -> 'Static Hello Test 01'", {
@@ -348,6 +348,15 @@ class Test extends buddy.SingleSuite {
 
             it("AnotherClass.newDynamicClass2('another4') -> 'another4 another4'", {
                 run('interpreted_group another_class other_class test_72').should.be('another4 another4');
+            });
+
+        });
+        */
+
+        describe("Interpretable macro", {
+
+            it("new SomeClass() -> 'some prop'", {
+                run('interpretable_some_class test_73').should.be('some prop');
             });
 
         });
