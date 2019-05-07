@@ -20,7 +20,7 @@ class ResolveImports {
 
     } //new
 
-    public function addImport(data:TImport) {
+    public function addImport(data:TImport, allowUnresolvedImports:Bool = false) {
 
         var parts = data.path.split('.');
         var lastPart = parts[parts.length-1];
@@ -52,7 +52,16 @@ class ResolveImports {
                 }
             }
             else {
-                throw 'Module not found: ' + data.path;
+                 var err = 'Module not found: ' + data.path;
+                 if (allowUnresolvedImports) {
+                     #if !interpret_mute_import_warnings
+                     trace('[warning] ' + err);
+                     #end
+                     return;
+                 }
+                 else {
+                    throw err;
+                 }
             }
         }
 

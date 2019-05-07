@@ -3,21 +3,23 @@ package interpret;
 import sys.io.File;
 import sys.FileSystem;
 import haxe.Timer;
+
 /** Standard watcher implementation based on haxe's Sys API.
     A watcher is reused and can watch multiple paths at the same time. */
+@:allow(interpret.LiveReload)
 class StandardWatcher implements Watcher {
 
     public static var UPDATE_INTERVAL:Float = 1.0;
 
-    var timer:Timer;
+    var watched:Map<String,WatchedFile> = new Map();
 
-    var watched:Map<String,WatchedFile>;
+    var destroyed = false;
+
+    var timeSinceLastCheck:Float = 0.0;
 
     public function new() {
 
-        timer = new Timer(Math.round(UPDATE_INTERVAL * 1000));
-        timer.run = tick;
-        watched = new Map();
+        LiveReload.tickCallbacks.push(tick);
 
     } //new
 
@@ -49,7 +51,22 @@ class StandardWatcher implements Watcher {
 
     } //watch
 
-    function tick() {
+    public function destroy() {
+
+        destroyed = true;
+        LiveReload.tickCallbacks.remove(tick);
+
+    } //destroy
+
+/// Internal
+
+    function tick(delta:Float) {
+
+        if (destroyed) return;
+
+        timeSinceLastCheck += delta;
+        if (timeSinceLastCheck < UPDATE_INTERVAL) return;
+        timeSinceLastCheck = 0.0;
 
         for (path in watched.keys()) {
             if (FileSystem.exists(path) && !FileSystem.isDirectory(path)) {

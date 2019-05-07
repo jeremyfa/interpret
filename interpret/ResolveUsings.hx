@@ -18,7 +18,7 @@ class ResolveUsings {
 
     } //new
 
-    public function addUsing(data:TUsing) {
+    public function addUsing(data:TUsing, allowUnresolvedImports:Bool = false) {
 
         var parts = data.path.split('.');
         var resolvedModule:DynamicModule = null;
@@ -34,7 +34,16 @@ class ResolveUsings {
         }
 
         if (resolvedModule == null) {
-            throw 'Module not found: ' + data.path;
+            var err = 'Module not found: ' + data.path;
+            if (allowUnresolvedImports) {
+                #if !interpret_mute_import_warnings
+                trace('[warning] ' + err);
+                #end
+                return;
+            }
+            else {
+                throw err;
+            }
         }
 
         inline function add(name, extendedType, item) {

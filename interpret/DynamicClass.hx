@@ -1,6 +1,6 @@
 package interpret;
 
-import interpret.ModuleFilter;
+import interpret.ModuleOptions;
 import interpret.ResolveUsings;
 import interpret.ResolveImports;
 import interpret.Types;
@@ -97,12 +97,12 @@ class DynamicClass {
 
 /// Public API
 
-    public function createInstance(?args:Array<Dynamic>) {
+    public function createInstance(?args:Array<Dynamic>, ?superInstance:Dynamic) {
 
         initIfNeeded();
 
         var instance = new DynamicInstance(this);
-        instance.init(args);
+        instance.init(args, superInstance);
 
         return instance;
 
@@ -255,7 +255,8 @@ class DynamicClass {
         var classTokens = [];
         var importsReady = false;
         var usingsReady = false;
-        var interpretableOnly = options.filter != null ? options.filter.interpretableOnly : false;
+        var interpretableOnly = options.moduleOptions != null ? options.moduleOptions.interpretableOnly : false;
+        var allowUnresolvedImports = options.moduleOptions != null ? options.moduleOptions.allowUnresolvedImports : false;
         var interpretableField = false;
         classGetters = new Map();
         classSetters = new Map();
@@ -302,10 +303,10 @@ class DynamicClass {
                         if (!importsReady) imports.pack = data.path;
                 
                     case TImport(data):
-                        if (!importsReady) imports.addImport(data);
+                        if (!importsReady) imports.addImport(data, allowUnresolvedImports);
                     
                     case TUsing(data):
-                        if (!usingsReady) usings.addUsing(data);
+                        if (!usingsReady) usings.addUsing(data, allowUnresolvedImports);
 
                     default:
                 }
@@ -482,9 +483,6 @@ class DynamicClass {
         classHscript = classResult.toString();
         instanceHscript = instanceResult.toString();
 
-        //trace('CLASS($className) $classHscript');
-        //trace('INSTANCE($className) $instanceHscript');
-
         // Create class path
         instanceType = className;
         if (packagePath != null && packagePath != '') {
@@ -544,7 +542,7 @@ class DynamicClass {
                             if (superDynamicClass == null) {
                                 var prevSelf = interpreter._self;
                                 interpreter._self = context;
-                                superStaticClass = interpreter.resolveClass(name);
+                                superStaticClass = TypeUtils.unwrap(interpreter.resolveClass(name), env);
                                 interpreter._self = prevSelf;
                             }
 
@@ -558,7 +556,7 @@ class DynamicClass {
 
     function superStaticClassHasInstanceField(name:String):Bool {
 
-        if (superStaticClass == null) return null;
+        if (superStaticClass == null) return false;
 
         if (superStaticClassInstanceFields == null) {
             var list = Type.getInstanceFields(superStaticClass);
@@ -644,6 +642,6 @@ typedef DynamicClassOptions = {
 
     @:optional var usings:ResolveUsings;
 
-    @:optional var filter:ModuleFilter;
+    @:optional var moduleOptions:ModuleOptions;
 
 } //DynamicClassOptions

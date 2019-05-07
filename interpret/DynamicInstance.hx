@@ -30,13 +30,16 @@ class DynamicInstance {
 
     } //new
 
-    private function init(?args:Array<Dynamic>) {
+    private function init(?args:Array<Dynamic>, ?superInstance:Dynamic) {
 
         // Create instance context
         context = new Map();
         context.set('__interpretType', dynamicClass.instanceType);
         context.set('__interpretInstance', this);
         context.set('__interpretClass', dynamicClass);
+        if (superInstance != null) {
+            context.set('super', superInstance);
+        }
         _contextArgs = [dynamicClass.context, context];
 
         // Create class interpreter and feed it with our program

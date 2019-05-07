@@ -1,5 +1,6 @@
 package interpret.macros;
 
+import haxe.io.Path;
 import haxe.macro.Printer;
 import haxe.macro.Context;
 import haxe.macro.Expr;
@@ -12,9 +13,17 @@ class InterpretableMacro {
 
         var fields = Context.getBuildFields();
 
+        #if (!display && !completion)
+
         var hasFieldsWithInterpretMeta = false;
 
         var currentPos = Context.currentPos();
+
+        var filePath = Context.getPosInfos(Context.getLocalClass().get().pos).file;
+        if (!Path.isAbsolute(filePath)) {
+            filePath = Path.join([Sys.getCwd(), filePath]);
+        }
+        filePath = Path.normalize(filePath);
 
         for (field in fields) {
 
@@ -83,11 +92,17 @@ class InterpretableMacro {
                             case [true, false]: macro if (__interpretClass != null) {
                                 return __interpretClass.call($v{dynCallName}, $dynCallArgs);
                             };
-                            case [false, true]: macro if (__interpretInstance != null) {
+                            case [false, true]: macro if (__interpretClass != null) {
+                                if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
+                                    __interpretInstance = __interpretClass.createInstance(null, this);
+                                }
                                 __interpretInstance.call($v{dynCallName}, $dynCallArgs);
                                 return;
                             };
-                            case [false, false]: macro if (__interpretInstance != null) {
+                            case [false, false]: macro if (__interpretClass != null) {
+                                if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
+                                    __interpretInstance = __interpretClass.createInstance(null, this);
+                                }
                                 return __interpretInstance.call($v{dynCallName}, $dynCallArgs);
                             };
                         }
@@ -98,10 +113,6 @@ class InterpretableMacro {
                                 exprs.unshift(dynCallExpr);
                             default:
                         }
-
-                        // TODO remove
-                        //var printer = new Printer();
-                        //trace(printer.printExpr(fn.expr));
 
                     default:
                         throw "@interpret meta only works on functions";
@@ -132,7 +143,7 @@ class InterpretableMacro {
                 name: '__interpretInstance',
                 kind: FVar(
                     macro :interpret.DynamicInstance,
-                    macro __interpretClass != null ? __interpretClass.createInstance() : null
+                    macro null
                 ),
                 access: [],
                 doc: '',
@@ -143,7 +154,31 @@ class InterpretableMacro {
                 }]
             });
 
+            #if interpret_watch
+            // Add watcher
+            fields.push({
+                pos: currentPos,
+                name: '__interpretWatch',
+                kind: FVar(
+                    macro :interpret.LiveReload,
+                    macro new interpret.LiveReload($v{filePath}, function(content:String) {
+                        trace('File changed at path ' + $v{filePath});
+                        __interpretClass = interpret.InterpretableTools.createInterpretClass(content);
+                    })
+                ),
+                access: [AStatic],
+                doc: '',
+                meta: [{
+                    name: ':noCompletion',
+                    params: [],
+                    pos: currentPos
+                }]
+            });
+            #end
+
         }
+
+        #end
 
         return fields;
 

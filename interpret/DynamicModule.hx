@@ -118,14 +118,16 @@ class DynamicModule {
 
 /// From string
 
-    static public function fromString(env:Env, moduleName:String, haxe:String, ?filter:ModuleFilter) {
+    static public function fromString(env:Env, moduleName:String, haxe:String, ?options:ModuleOptions) {
 
         var converter = new ConvertHaxe(haxe);
         converter.convert();
 
         var interpretableOnly = false;
-        if (filter != null) {
-            interpretableOnly = filter.interpretableOnly;
+        var allowUnresolvedImports = false;
+        if (options != null) {
+            interpretableOnly = options.interpretableOnly;
+            allowUnresolvedImports = options.allowUnresolvedImports;
         }
 
         var module = new DynamicModule();
@@ -152,11 +154,11 @@ class DynamicModule {
                 
                     case TImport(data):
                         if (shallow) continue;
-                        module.imports.addImport(data);
+                        module.imports.addImport(data, allowUnresolvedImports);
                     
                     case TUsing(data):
                         if (shallow) continue;
-                        module.usings.addUsing(data);
+                        module.usings.addUsing(data, allowUnresolvedImports);
 
                     case TModifier(data):
                         modifiers.set(data.name, true);
@@ -184,7 +186,7 @@ class DynamicModule {
                                 dynClass = shallow ? null : new DynamicClass(env, {
                                     tokens: converter.tokens,
                                     targetClass: data.name,
-                                    filter: filter
+                                    moduleOptions: options
                                 });
                                 if (!shallow) module.dynamicClasses.set(data.name, dynClass);
                                 currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);

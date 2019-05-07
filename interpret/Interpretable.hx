@@ -5,6 +5,4 @@ package interpret;
 #end
 interface Interpretable {
 
-    //function reload():Void;
-
 } //Interpretable
