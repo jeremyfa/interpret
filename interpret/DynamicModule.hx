@@ -118,10 +118,15 @@ class DynamicModule {
 
 /// From string
 
-    static public function fromString(env:Env, moduleName:String, haxe:String) {
+    static public function fromString(env:Env, moduleName:String, haxe:String, ?filter:ModuleFilter) {
 
         var converter = new ConvertHaxe(haxe);
         converter.convert();
+
+        var interpretableOnly = false;
+        if (filter != null) {
+            interpretableOnly = filter.interpretableOnly;
+        }
 
         var module = new DynamicModule();
         module.dynamicClasses = new Map();
@@ -134,6 +139,7 @@ class DynamicModule {
             var currentClassPath:String = null;
             var dynClass:DynamicClass = null;
             var modifiers = new Map<String,Bool>();
+            var interpretableField = false;
             var packagePrefix:String = '';
 
             for (token in converter.tokens) {
@@ -157,22 +163,46 @@ class DynamicModule {
 
                     case TType(data):
                         if (data.kind == CLASS) {
-                            dynClass = shallow ? null : new DynamicClass(env, {
-                                tokens: converter.tokens,
-                                targetClass: data.name
-                            });
-                            if (!shallow) module.dynamicClasses.set(data.name, dynClass);
-                            currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
-                            module.add(currentClassPath, null, ModuleItemKind.CLASS, null);
-                            if (!shallow) {
-                                if (data.parent != null) {
-                                    module.addSuperClass(currentClassPath, TypeUtils.toResolvedType(module.imports, data.parent.name));
-                                }
+                            var classAllowed = false;
+                            if (interpretableOnly) {
+                                // If only keeping interpretable classes, skip any that doesn't
+                                // implement interpret.Interpretable interface
                                 if (data.interfaces != null) {
                                     for (item in data.interfaces) {
-                                        module.addInterface(currentClassPath, TypeUtils.toResolvedType(module.imports, item.name));
+                                        var resolvedType = TypeUtils.toResolvedType(module.imports, item.name);
+                                        if (resolvedType == 'Interpretable' || resolvedType == 'interpret.Interpretable') {
+                                            classAllowed = true;
+                                            break;
+                                        }
                                     }
                                 }
+                            }
+                            else {
+                                classAllowed = true;
+                            }
+                            if (classAllowed) {
+                                dynClass = shallow ? null : new DynamicClass(env, {
+                                    tokens: converter.tokens,
+                                    targetClass: data.name,
+                                    filter: filter
+                                });
+                                if (!shallow) module.dynamicClasses.set(data.name, dynClass);
+                                currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
+                                module.add(currentClassPath, null, ModuleItemKind.CLASS, null);
+                                if (!shallow) {
+                                    if (data.parent != null) {
+                                        module.addSuperClass(currentClassPath, TypeUtils.toResolvedType(module.imports, data.parent.name));
+                                    }
+                                    if (data.interfaces != null) {
+                                        for (item in data.interfaces) {
+                                            module.addInterface(currentClassPath, TypeUtils.toResolvedType(module.imports, item.name));
+                                        }
+                                    }
+                                }
+                            }
+                            else {
+                                dynClass = null;
+                                currentClassPath = null;
                             }
                         }
                         else {
@@ -183,9 +213,13 @@ class DynamicModule {
                         modifiers = new Map<String,Bool>();
                     
                     case TField(data):
-                        if (currentClassPath != null) {
+                        // If only keeping interpretable fields, skip any that doesn't
+                        // have @interpret meta
+                        if (currentClassPath != null && (!interpretableOnly || interpretableField)) {
                             if (modifiers.exists('static')) {
-                                if (data.kind == VAR) {
+                                // When filtering with interpretableOnly, skip vars as it only works
+                                // on methods for now
+                                if (data.kind == VAR && !interpretableOnly) {
                                     module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_FIELD, null);
                                 }
                                 else if (data.kind == METHOD) {
@@ -203,9 +237,15 @@ class DynamicModule {
                                 }
                             }
                         }
+                        // Reset @interpret meta
+                        interpretableField = false;
                     
-                    default:
-                
+                    case TMeta(data):
+                        if (data.name == 'interpret') {
+                            interpretableField = true;
+                        }
+
+                    default:                
                 }
             }
         }

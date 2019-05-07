@@ -1,5 +1,6 @@
 package interpret;
 
+import interpret.ModuleFilter;
 import interpret.ResolveUsings;
 import interpret.ResolveImports;
 import interpret.Types;
@@ -254,6 +255,8 @@ class DynamicClass {
         var classTokens = [];
         var importsReady = false;
         var usingsReady = false;
+        var interpretableOnly = options.filter != null ? options.filter.interpretableOnly : false;
+        var interpretableField = false;
         classGetters = new Map();
         classSetters = new Map();
         classMethods = new Map();
@@ -332,7 +335,7 @@ class DynamicClass {
                     modifiers.set(data.name, true);
 
                 case TField(data):
-                    if (data.kind == VAR) {
+                    if (data.kind == VAR && !interpretableOnly) {
                         if (modifiers.exists('static')) {
                             classVars.set(data.name, true);
                             classPropertyList.push(data.name);
@@ -355,8 +358,9 @@ class DynamicClass {
                             if (data.expr != null) defaults.push([data.name, data.expr]);
                         }
                     }
-                    // Reset modifiers
+                    // Reset modifiers and meta
                     modifiers = new Map<String,Bool>();
+                    interpretableField = false;
 
                 default:
             }
@@ -400,14 +404,20 @@ class DynamicClass {
 
         // Methods & Imports
         modifiers = new Map<String,Bool>();
+        interpretableField = false;
         for (token in classTokens) {
             switch (token) {
 
                 case TModifier(data):
                     modifiers.set(data.name, true);
+                
+                case TMeta(data):
+                    if (data.name == 'interpret') {
+                        interpretableField = true;
+                    }
 
                 case TField(data):
-                    if (data.kind == METHOD) {
+                    if (data.kind == METHOD && (!interpretableOnly || interpretableField)) {
                         var isStatic = modifiers.exists('static');
                         var result = isStatic ? classResult : instanceResult;
                         if (isStatic) {
@@ -457,8 +467,9 @@ class DynamicClass {
                         result.add('\n');
 
                     }
-                    // Reset modifiers
+                    // Reset modifiers and meta
                     modifiers = new Map<String,Bool>();
+                    interpretableField = false;
 
                 default:
             }
@@ -632,5 +643,7 @@ typedef DynamicClassOptions = {
     @:optional var imports:ResolveImports;
 
     @:optional var usings:ResolveUsings;
+
+    @:optional var filter:ModuleFilter;
 
 } //DynamicClassOptions

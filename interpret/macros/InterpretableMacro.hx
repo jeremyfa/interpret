@@ -100,8 +100,8 @@ class InterpretableMacro {
                         }
 
                         // TODO remove
-                        var printer = new Printer();
-                        trace(printer.printExpr(fn.expr));
+                        //var printer = new Printer();
+                        //trace(printer.printExpr(fn.expr));
 
                     default:
                         throw "@interpret meta only works on functions";
