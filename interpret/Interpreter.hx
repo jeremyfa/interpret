@@ -144,6 +144,13 @@ class Interpreter extends hscript.Interp {
                     if (Reflect.isFunction(result)) {
                         // Bind superClass context
                         return Reflect.makeVarArgs(function(args) {
+
+                            var prevArgs = args;
+                            args = [];
+                            for (i in 0...prevArgs.length) {
+                                args.push(unwrap(prevArgs[i]));
+                            }
+
                             return Reflect.callMethod(superInstance, result, args);
                         });
                     } else {
@@ -287,7 +294,7 @@ class Interpreter extends hscript.Interp {
                         var result = Reflect.field(superInstance, id);
                         var setter_result = Reflect.field(superInstance, 'set_' + id);
                         if (result != null || setter_result != null || Reflect.hasField(superInstance, id) || Reflect.hasField(superInstance, 'set_' + id)) {
-                            Reflect.setProperty(superInstance, id, v);
+                            Reflect.setProperty(superInstance, id, unwrap(v));
                             return v;
                         }
                     }
@@ -610,6 +617,13 @@ class Interpreter extends hscript.Interp {
                             throw 'Unresolved dynamic extension: ' + name;
                         }
                     }
+                    else {
+                        var prevArgs = args;
+                        args = [];
+                        for (i in 0...prevArgs.length) {
+                            args.push(unwrap(prevArgs[i]));
+                        }
+                    }
                     return Reflect.callMethod(null, rawItem, [o].concat(args));
                 case ClassFieldItem(rawItem, moduleId, name):
                     if (rawItem == null) {
@@ -622,10 +636,17 @@ class Interpreter extends hscript.Interp {
                             throw 'Unresolved dynamic class field: ' + name;
                         }
                     }
+                    else {
+                        var prevArgs = args;
+                        args = [];
+                        for (i in 0...prevArgs.length) {
+                            args.push(unwrap(prevArgs[i]));
+                        }
+                    }
                     return Reflect.callMethod(o, rawItem, args);
                 case EnumFieldItem(rawItem, _, _):
                     if (Std.is(rawItem, DynamicClass)) {
-                        return null; // TODO
+                        return null; // TODO?
                     }
                     return Reflect.callMethod(o, rawItem, args);
                 case SuperClassItem(ClassItem(rawItem, moduleId, name)):
@@ -639,6 +660,13 @@ class Interpreter extends hscript.Interp {
                         }
                         else {
                             throw 'Unresolved dynamic superclass: ' + name;
+                        }
+                    }
+                    else {
+                        var prevArgs = args;
+                        args = [];
+                        for (i in 0...prevArgs.length) {
+                            args.push(unwrap(prevArgs[i]));
                         }
                     }
                     var self:Map<String,Dynamic> = locals.get(selfName).r;
@@ -691,6 +719,7 @@ class Interpreter extends hscript.Interp {
     function unwrap(value:Dynamic):Dynamic {
 
         if (value == null) return null;
+        if (value == Unresolved.UNRESOLVED) return null;
 
         if (Std.is(value, RuntimeItem)) {
             var item:RuntimeItem = cast value;
