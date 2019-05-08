@@ -314,10 +314,15 @@ class DynamicModule {
 
         var module = Context.getModule(typePath);
 
+        var abstractTypes:Array<String> = [];
+
         var toAdd:Array<Array<Dynamic>> = [];
+        var toAbstract:Array<Array<Dynamic>> = [];
         var toAlias:Array<Array<String>> = [];
         var toSuperClass:Array<Array<String>> = [];
         var toInterface:Array<Array<String>> = [];
+        
+        var currentPos = Context.currentPos();
         
         for (item in module) {
             switch (item) {
@@ -328,72 +333,186 @@ class DynamicModule {
                     // Workaround needed on haxe 4?
                     if (rawTypePath.startsWith('_Sys.')) continue;
 
+                    // Compute sub type paths and alias
+                    var alias = null;
                     var subTypePath = rawTypePath;
                     if (rawTypePath != typePath) {
                         subTypePath = typePath + rawTypePath.substring(rawTypePath.lastIndexOf('.'));
-                        toAlias.push([rawTypePath, subTypePath]);
-                    }
-                    toAdd.push([subTypePath, ModuleItemKind.CLASS]);
-
-                    // Superclass
-                    var prevParent = t;
-                    var parentHold = t.get().superClass;
-                    var parent = parentHold != null ? parentHold.t : null;
-                    while (parent != null) {
-                        toSuperClass.push([prevParent.toString(), parent.toString()]);
-                        parentHold = parent.get().superClass;
-                        parent = parentHold != null ? parentHold.t : null;
+                        alias = [rawTypePath, subTypePath];
                     }
 
-                    // Interfaces
-                    for (item in t.get().interfaces) {
-                        toInterface.push([subTypePath, item.t.toString()]);
+                    // Abstract implementation?
+                    var abstractType = null;
+                    if (rawTypePath.endsWith('_Impl_')) {
+                        for (aType in abstractTypes) {
+                            var implName = aType;
+                            var dotIndex = implName.lastIndexOf('.');
+                            if (dotIndex != -1) {
+                                implName = implName.substring(0, dotIndex) + '._' + implName.substring(dotIndex + 1) + '.' + implName.substring(dotIndex + 1) + '_Impl_';
+                            }
+                            else {
+                                implName = '_' + implName + '.' + implName + '_Impl_';
+                            }
+                            if (rawTypePath == implName) {
+                                abstractType = aType;
+                                break;
+                            }
+                        }
+
+                        if (abstractType == null) {
+                            continue;
+                        }
                     }
 
-                    // Static fields
-                    for (field in t.get().statics.get()) {
-                        if (!field.isPublic) continue;
-#if !interpret_keep_deprecated
-                        if (field.meta.has(':deprecated')) continue;
-#end
-                        switch (field.kind) {
-                            case FMethod(k):
-                                switch (field.type) {
-                                    case TFun(args, ret):
-                                        if (args.length > 0) {
-                                            var extendedType:String = null;
-                                            switch (args[0].t) {
-                                                case TInst(t, params):
-                                                    extendedType = t.toString();
-                                                case TAbstract(t, params):
-                                                    extendedType = t.toString();
-                                                default:
-                                            }
-                                            toAdd.push([
-                                                subTypePath + '.' + field.name,
-                                                ModuleItemKind.CLASS_FIELD,
-                                                extendedType
-                                            ]);
-                                        } else {
-                                            toAdd.push([
-                                                subTypePath + '.' + field.name,
-                                                ModuleItemKind.CLASS,
-                                                null
-                                            ]);
-                                        }
-                                    default:
-                                        toAdd.push([
-                                            subTypePath + '.' + field.name,
-                                            ModuleItemKind.CLASS_FIELD,
-                                            null
-                                        ]);
+                    if (abstractType != null) {
+                        // Abstract implementation code
+                        trace('ABSTRACT IMPL $abstractType');
+
+                        for (field in t.get().statics.get()) {
+    #if !interpret_keep_deprecated
+                            if (field.meta.has(':deprecated')) continue;
+    #end
+                            if (!field.isPublic) continue;
+                            trace('field: ' + field.name);
+
+                            var metas = field.meta.get();
+                            var hasImplMeta = false;
+                            for (meta in metas) {
+                                if (meta.name == ':impl') {
+                                    hasImplMeta = true;
+                                    break;
                                 }
-                            default:
-                                toAdd.push([
-                                    subTypePath + '.' + field.name,
-                                    ModuleItemKind.CLASS_FIELD,
-                                    null
-                                ]);
+                            }
+                            var isStatic = !hasImplMeta;
+
+                            trace('   hasImpl: $hasImplMeta');
+                            //trace('type: ' + field.type);
+                            //trace(field);
+                            switch (field.kind) {
+
+                                case FMethod(k):
+                                    switch (field.type) {
+                                        case TFun(args, ret):
+                                            var _args = [];
+                                            var _ret = null;
+                                            if (ret != null) {
+                                                _ret = haxe.macro.TypeTools.toComplexType(ret);
+                                            }
+                                            for (arg in args) {
+
+                                                var complexType = haxe.macro.TypeTools.toComplexType(arg.t);
+                                                /*switch (complexType) {
+                                                    case TPath(p):
+                                                        trace('TPath: name=' + p.name + ' pack=' + p.pack + ' sub=' + p.sub);
+                                                    default:
+                                                }*/
+
+                                                _args.push({
+                                                    name: arg.name,
+                                                    type: complexType,
+                                                    opt: arg.opt,
+                                                    value: null
+                                                });
+                                            }
+                                            toAbstract.push([
+                                                abstractType + '.' + field.name,
+                                                ModuleItemKind.ABSTRACT_FUNC,
+                                                _args, _ret,
+                                                isStatic
+                                            ]);
+                                        default:
+                                    }
+                                case FVar(read, write):
+                                    var readable = switch (read) {
+                                        case AccNormal | AccCall | AccInline: true;
+                                        default: false;
+                                    }
+                                    var writable = switch (write) {
+                                        case AccNormal | AccCall: true;
+                                        default: false;
+                                    }
+                                    if (isStatic) {
+                                        // In that case, that's a static var access
+                                        toAbstract.push([
+                                            abstractType + '.' + field.name,
+                                            ModuleItemKind.ABSTRACT_VAR,
+                                            readable, writable
+                                        ]);
+                                    }
+                                default:
+                            }
+                        } 
+                    }
+                    else {
+                        // Regular class
+
+                        // Add alias if any
+                        if (alias != null) {
+                            toAlias.push(alias);
+                        }
+
+                        var subTypePath = rawTypePath;
+                        if (rawTypePath != typePath) {
+                            subTypePath = typePath + rawTypePath.substring(rawTypePath.lastIndexOf('.'));
+                            toAlias.push([rawTypePath, subTypePath]);
+                        }
+                        toAdd.push([subTypePath, ModuleItemKind.CLASS]);
+
+                        // Superclass
+                        var prevParent = t;
+                        var parentHold = t.get().superClass;
+                        var parent = parentHold != null ? parentHold.t : null;
+                        while (parent != null) {
+                            toSuperClass.push([prevParent.toString(), parent.toString()]);
+                            parentHold = parent.get().superClass;
+                            parent = parentHold != null ? parentHold.t : null;
+                        }
+
+                        // Interfaces
+                        for (item in t.get().interfaces) {
+                            toInterface.push([subTypePath, item.t.toString()]);
+                        }
+
+                        // Static fields
+                        for (field in t.get().statics.get()) {
+                            if (!field.isPublic) continue;
+    #if !interpret_keep_deprecated
+                            if (field.meta.has(':deprecated')) continue;
+    #end
+                            switch (field.kind) {
+                                case FMethod(k):
+                                    switch (field.type) {
+                                        case TFun(args, ret):
+                                            if (args.length > 0) {
+                                                var extendedType:String = null;
+                                                switch (args[0].t) {
+                                                    case TInst(t, params):
+                                                        extendedType = t.toString();
+                                                    case TAbstract(t, params):
+                                                        extendedType = t.toString();
+                                                    default:
+                                                }
+                                                toAdd.push([
+                                                    subTypePath + '.' + field.name,
+                                                    ModuleItemKind.CLASS_FIELD,
+                                                    extendedType
+                                                ]);
+                                            } else {
+                                                toAdd.push([
+                                                    subTypePath + '.' + field.name,
+                                                    ModuleItemKind.CLASS_FIELD,
+                                                    null
+                                                ]);
+                                            }
+                                        default:
+                                    }
+                                default:
+                                    toAdd.push([
+                                        subTypePath + '.' + field.name,
+                                        ModuleItemKind.CLASS_FIELD,
+                                        null
+                                    ]);
+                            }
                         }
                     }
                 
@@ -433,6 +552,20 @@ class DynamicModule {
                             default:
                         }
                     }
+                case TAbstract(t, params):
+                    // Type
+                    var rawTypePath = t.toString();
+
+                    var subTypePath = rawTypePath;
+                    if (rawTypePath != typePath) {
+                        subTypePath = typePath + rawTypePath.substring(rawTypePath.lastIndexOf('.'));
+                        toAlias.push([rawTypePath, subTypePath]);
+                    }
+                    toAdd.push([subTypePath, ModuleItemKind.ABSTRACT]);
+
+                    abstractTypes.push(subTypePath);
+
+                    trace('ABSTRACT $t / $params');
 
                 default:
             }
@@ -440,8 +573,14 @@ class DynamicModule {
 
         var addExprs:Array<Expr> = [];
         for (item in toAdd) {
-            var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]});
-            addExprs.push(expr);
+            if (item[1] == ModuleItemKind.ABSTRACT) {
+                var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]});
+                addExprs.push(expr);
+            }
+            else {
+                var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]});
+                addExprs.push(expr);
+            }
         }
         var aliasExprs:Array<Expr> = [];
         for (item in toAlias) {
@@ -459,13 +598,153 @@ class DynamicModule {
             interfaceExprs.push(expr);
         }
 
+        var abstractExprs:Array<Expr> = [];
+        for (item in toAbstract) {
+            var fullName:String = item[0];
+            var abstractType:String = fullName;
+            var abstractName:String = fullName;
+            var abstractPack = [];
+            var name:String = fullName;
+            var dotIndex = fullName.lastIndexOf('.');
+            if (dotIndex != -1) {
+                name = fullName.substring(dotIndex + 1);
+                abstractType = fullName.substring(0, dotIndex);
+                abstractName = abstractType;
+                dotIndex = abstractType.lastIndexOf('.');
+                if (dotIndex != -1) {
+                    abstractName = abstractType.substring(dotIndex + 1);
+                    abstractPack = abstractType.substring(0, dotIndex).split('.');
+                }
+            }
+            if (item[1] == ModuleItemKind.ABSTRACT_FUNC) {
+                var args:Array<FunctionArg> = item[2];
+                var ret:ComplexType = item[3];
+                var isStatic:Bool = item[4];
+                var instanceArgs:Array<FunctionArg> = [].concat(args);
+                var callArgs = [for (arg in args) macro $i{arg.name}];
+                args = [{
+                    name: '_hold',
+                    type: macro :interpret.HoldValue,
+                    opt: false,
+                    value: null
+                }].concat(args);
+                if (!isStatic) {
+                    instanceArgs.shift();
+                    callArgs = [for (arg in instanceArgs) macro $i{arg.name}];
+                }
+                var isGetter = name.startsWith('get_');
+                var isSetter = name.startsWith('set_');
+                if (isGetter || isSetter) name = name.substring(4);
+
+                var isVoidRet = false;
+                if (ret == null) {
+                    isVoidRet = true;
+                }
+                else {
+                    switch (ret) {
+                        case TPath(p):
+                            if (p.name == 'Void') {
+                                isVoidRet = true;
+                            }
+                        default:
+                    }
+                }
+
+                if (!isStatic) {
+                    var thisArg = args[1];
+                    thisArg.name = '_this';
+                    thisArg.type = TPath({
+                        name: abstractName,
+                        pack: abstractPack,
+                        params: []
+                    });
+                }
+
+                //trace('args: ' + args);
+                /*var fnExpr0 = macro function(a:Int) {
+                    
+                };
+                trace('fn0: ' + fnExpr0);*/
+                /*var varExpr_ = macro var _this:ceramic.Color = this;
+                trace('varExpr: $varExpr_');
+
+                var varExpr = {
+                    expr: EVars([{
+                        expr: {
+                            expr: EConst(CIdent('this')),
+                            pos: currentPos,
+                            name: '_this'
+                        },
+                        pos: currentPos
+                    }]),
+                    pos: currentPos
+                }*/
+
+                var fnBody = switch [isStatic, isVoidRet] {
+                    case [true, true]: macro {
+                        $p{item[0].split('.')}($a{callArgs});
+                    };
+                    case [true, false]: macro {
+                        return $p{item[0].split('.')}($a{callArgs});
+                    };
+                    case [false, true]: macro {
+                        $p{['_this', name]}($a{callArgs});
+                        _hold.value = _this;
+                    };
+                    case [false, false]: macro {
+                        var _res = $p{['_this', name]}($a{callArgs});
+                        _hold.value = _this;
+                        return _res;
+                    };
+                };
+
+                var fnExpr = {
+                    expr: EFunction(null, {
+                        args: args,
+                        expr: {
+                            expr: fnBody.expr,
+                            pos: pos
+                        },
+                        params: [],
+                        ret: null
+                    }),
+                    pos: pos
+                };
+                //trace('fn: ' + fnExpr);
+                var printer = new haxe.macro.Printer();
+                trace('$name: ' + printer.printExpr(fnExpr));
+                var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, null);
+                abstractExprs.push(expr);
+            }
+            else { // ABSTRACT_VAR
+                //trace('item[0]: ' + item[0]);
+                var readable:Bool = item[2];
+                var writable:Bool = item[3];
+                if (readable) {
+                    var expr = macro mod.add($v{item[0]}, function() {
+                        return $p{item[0].split('.')};
+                    }, $v{item[1]}, 0);
+                    abstractExprs.push(expr);
+                }
+                if (writable) {
+                    var expr = macro mod.add($v{item[0]}, function(value) {
+                        return $p{item[0].split('.')} = value;
+                    }, $v{item[1]}, 1);
+                    abstractExprs.push(expr);
+                }
+            }
+        }
+
         var result = macro (function() {
             var module = new interpret.DynamicModule();
             module.pack = $v{packString};
             $b{aliasExprs};
             $b{superClassExprs};
             $b{interfaceExprs};
-            module.lazyLoad = function(mod) $b{addExprs};
+            module.lazyLoad = function(mod) {
+                $b{addExprs};
+                $b{abstractExprs};
+            }
             return module;
         })();
 

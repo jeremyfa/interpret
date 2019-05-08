@@ -1,7 +1,10 @@
 package interpret;
 
+#if sys
 import sys.io.File;
 import sys.FileSystem;
+#end
+
 import haxe.Timer;
 
 /** Standard watcher implementation based on haxe's Sys API.
@@ -26,7 +29,8 @@ class StandardWatcher implements Watcher {
     public function watch(path:String, onUpdate:String->Void):Void->Void {
 
         #if !sys
-        throw 'Cannot watch file at path $path with StandardWatcher on this target';
+        trace('[warning] Cannot watch file at path $path with StandardWatcher on this target');
+        return function() {};
         #end
 
         var watchedFile = watched.get(path);
@@ -68,6 +72,7 @@ class StandardWatcher implements Watcher {
         if (timeSinceLastCheck < UPDATE_INTERVAL) return;
         timeSinceLastCheck = 0.0;
 
+        #if sys
         for (path in watched.keys()) {
             if (FileSystem.exists(path) && !FileSystem.isDirectory(path)) {
                 var stat = FileSystem.stat(path);
@@ -99,6 +104,7 @@ class StandardWatcher implements Watcher {
             }
             #end
         }
+        #end
 
     } //tick
 

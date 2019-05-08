@@ -180,8 +180,6 @@ enum TTypeKind {
 
     ABSTRACT;
 
-    YOUPI(bref:String); // TODO remove
-
 } //TTypeKind
 
 enum TParentKind {
@@ -201,5 +199,11 @@ class ModuleItemKind {
     public inline static var ENUM = 2;
 
     public inline static var ENUM_FIELD = 3;
+
+    public inline static var ABSTRACT = 4;
+
+    public inline static var ABSTRACT_FUNC = 5;
+
+    public inline static var ABSTRACT_VAR = 6;
 
 } //ModuleItemKind
