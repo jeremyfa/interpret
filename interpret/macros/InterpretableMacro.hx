@@ -30,6 +30,8 @@ class InterpretableMacro {
         var classPack:Array<String> = localClass.pack;
         var className:String = localClass.name;
 
+        var extraFields:Array<Field> = null;
+
         for (field in fields) {
 
             if (hasInterpretMeta(field)) {
@@ -37,6 +39,7 @@ class InterpretableMacro {
                 switch (field.kind) {
                     case FFun(fn):
                         hasFieldsWithInterpretMeta = true;
+                        if (extraFields == null) extraFields = [];
 
                         if (field.name == 'new') {
                             throw "@interpret is not allowed on constructor";
@@ -77,6 +80,20 @@ class InterpretableMacro {
                         var dynCallArgsArray = [for (arg in fn.args) macro $i{arg.name}];
                         var dynCallArgs = fn.args.length > 0 ? macro $a{dynCallArgsArray} : macro null;
                         var dynCallName = field.name;
+                        var dynCallBrokenName = '__interpretBroken_' + field.name;
+
+                        extraFields.push({
+                            pos: currentPos,
+                            name: dynCallBrokenName,
+                            kind: FVar(macro :Bool, macro false),
+                            access: [APrivate, AStatic],
+                            doc: '',
+                            meta: [{
+                                name: ':noCompletion',
+                                params: [],
+                                pos: currentPos
+                            }]
+                        });
 
                         // Ensure expr is surrounded with a block
                         switch (fn.expr.expr) {
@@ -91,24 +108,62 @@ class InterpretableMacro {
                         // Compute (conditional) dynamic call expr
                         var dynCallExpr = switch [isStatic, isVoidRet] {
                             case [true, true]: macro if (__interpretClass != null) {
-                                __interpretClass.call($v{dynCallName}, $dynCallArgs);
-                                return;
+                                try {
+                                    __interpretClass.call($v{dynCallName}, $dynCallArgs);
+                                    $i{dynCallBrokenName} = false;
+                                    return;
+                                }
+                                catch (e:Dynamic) {
+                                    if (!$i{dynCallBrokenName}) {
+                                        interpret.Errors.handleInterpretableError(e);
+                                    }
+                                    $i{dynCallBrokenName} = true;
+                                }
                             };
                             case [true, false]: macro if (__interpretClass != null) {
-                                return __interpretClass.call($v{dynCallName}, $dynCallArgs);
+                                try {
+                                    var res = __interpretClass.call($v{dynCallName}, $dynCallArgs);
+                                    $i{dynCallBrokenName} = false;
+                                    return res;
+                                }
+                                catch (e:Dynamic) {
+                                    if (!$i{dynCallBrokenName}) {
+                                        interpret.Errors.handleInterpretableError(e);
+                                    }
+                                    $i{dynCallBrokenName} = true;
+                                }
                             };
                             case [false, true]: macro if (__interpretClass != null) {
-                                if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
-                                    __interpretInstance = __interpretClass.createInstance(null, this);
+                                try {
+                                    if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
+                                        __interpretInstance = __interpretClass.createInstance(null, this);
+                                    }
+                                    __interpretInstance.call($v{dynCallName}, $dynCallArgs);
+                                    $i{dynCallBrokenName} = false;
+                                    return;
                                 }
-                                __interpretInstance.call($v{dynCallName}, $dynCallArgs);
-                                return;
+                                catch (e:Dynamic) {
+                                    if (!$i{dynCallBrokenName}) {
+                                        interpret.Errors.handleInterpretableError(e);
+                                    }
+                                    $i{dynCallBrokenName} = true;
+                                }
                             };
                             case [false, false]: macro if (__interpretClass != null) {
-                                if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
-                                    __interpretInstance = __interpretClass.createInstance(null, this);
+                                try {
+                                    if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
+                                        __interpretInstance = __interpretClass.createInstance(null, this);
+                                    }
+                                    var res = __interpretInstance.call($v{dynCallName}, $dynCallArgs);
+                                    $i{dynCallBrokenName} = false;
+                                    return res;
                                 }
-                                return __interpretInstance.call($v{dynCallName}, $dynCallArgs);
+                                catch (e:Dynamic) {
+                                    if (!$i{dynCallBrokenName}) {
+                                        interpret.Errors.handleInterpretableError(e);
+                                    }
+                                    $i{dynCallBrokenName} = true;
+                                }
                             };
                         }
 
@@ -133,7 +188,7 @@ class InterpretableMacro {
                 pos: currentPos,
                 name: '__interpretClass',
                 kind: FVar(macro :interpret.DynamicClass, macro null),
-                access: [AStatic],
+                access: [APrivate, AStatic],
                 doc: '',
                 meta: [{
                     name: ':noCompletion',
@@ -150,7 +205,7 @@ class InterpretableMacro {
                     macro :interpret.DynamicInstance,
                     macro null
                 ),
-                access: [],
+                access: [APrivate],
                 doc: '',
                 meta: [{
                     name: ':noCompletion',
@@ -168,10 +223,16 @@ class InterpretableMacro {
                     macro :interpret.LiveReload,
                     macro new interpret.LiveReload($v{filePath}, function(content:String) {
                         trace('File changed at path ' + $v{filePath});
-                        __interpretClass = interpret.InterpretableTools.createInterpretClass($v{classPack}, $v{className}, content);
+                        try {
+                            __interpretClass = interpret.InterpretableTools.createInterpretClass($v{classPack}, $v{className}, content);
+                        }
+                        catch (e:Dynamic) {
+                            interpret.Errors.handleInterpretableError(e);
+                            __interpretClass = null;
+                        }
                     })
                 ),
-                access: [AStatic],
+                access: [APrivate, AStatic],
                 doc: '',
                 meta: [{
                     name: ':noCompletion',
@@ -182,6 +243,12 @@ class InterpretableMacro {
             #end
 
         }
+
+        if (extraFields != null) {
+            for (field in extraFields) {
+                fields.push(field);
+            }
+        } 
 
 #end
 
