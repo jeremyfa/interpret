@@ -7,4 +7,8 @@ class ModuleOptions {
 
     public var allowUnresolvedImports:Bool = false;
 
+    public var extendingClassName:String = null;
+
+    public var extendedClassName:String = null;
+
 } //ModuleOptions

@@ -121,14 +121,42 @@ class DynamicModule {
     static public function fromString(env:Env, moduleName:String, haxe:String, ?options:ModuleOptions) {
 
         var converter = new ConvertHaxe(haxe);
-        converter.convert();
 
         var interpretableOnly = false;
         var allowUnresolvedImports = false;
+        var extendingClassName = null;
+        var extendedClassName = null;
         if (options != null) {
             interpretableOnly = options.interpretableOnly;
             allowUnresolvedImports = options.allowUnresolvedImports;
+            extendingClassName = options.extendingClassName;
+            extendedClassName = options.extendedClassName;
         }
+
+        // Transform class token if needed
+        if (extendingClassName != null && extendedClassName != null) {
+            converter.transformToken = function(token) {
+                switch (token) {
+                    case TType(data):
+                        if (data.kind == CLASS && data.name == extendedClassName) {
+                            data.parent = {
+                                name: extendedClassName,
+                                kind: SUPERCLASS
+                            };
+                            data.name = extendingClassName;
+                            data.interfaces = [{
+                                name: 'Interpretable',
+                                kind: INTERFACE
+                            }];
+                            return TType(data);
+                        }
+                    default:
+                }
+                return token;
+            };
+        }
+
+        converter.convert();
 
         var module = new DynamicModule();
         module.dynamicClasses = new Map();

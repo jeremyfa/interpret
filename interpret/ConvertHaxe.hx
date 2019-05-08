@@ -12,6 +12,8 @@ class ConvertHaxe {
 
     public var tokens(default,null):Array<Token>;
 
+    public var transformToken:Token->Token = null;
+
     public function new(haxe:String) {
 
         this.haxe = haxe.replace("\r", '');
@@ -107,7 +109,7 @@ class ConvertHaxe {
                 updateWord();
                 
                 if (MODIFIERS.exists(word)) {
-                    tokens.push(TModifier({
+                    addToken(TModifier({
                         pos: i,
                         name: word
                     }));
@@ -166,6 +168,18 @@ class ConvertHaxe {
         }
 
     } //convert
+
+/// Add token hook
+
+    inline function addToken(token:Token):Void {
+
+        if (transformToken != null) {
+            token = transformToken(token);
+        }
+
+        tokens.push(token);
+
+    } //addToken
 
 /// Conversion helpers
 
@@ -414,7 +428,7 @@ class ConvertHaxe {
         openBraces++;
         inClassBraces = openBraces;
 
-        tokens.push(TType({
+        addToken(TType({
             pos: i,
             kind: CLASS,
             name: RE_CLASS_DECL.matched(1),
@@ -436,7 +450,7 @@ class ConvertHaxe {
         openBraces++;
         inEnumBraces = openBraces;
 
-        tokens.push(TType({
+        addToken(TType({
             pos: i,
             kind: ENUM,
             name: RE_ENUM_DECL.matched(2)
@@ -458,7 +472,7 @@ class ConvertHaxe {
         var type = RE_ABSTRACT_DECL.matched(2);
         if (type != null) type = cleanType(type);
 
-        tokens.push(TType({
+        addToken(TType({
             pos: i,
             kind: ABSTRACT,
             name: RE_ABSTRACT_DECL.matched(1),
@@ -487,7 +501,7 @@ class ConvertHaxe {
         var type = RE_TYPEDEF_DECL.matched(3) != '' ? RE_TYPEDEF_DECL.matched(3) : null;
         if (type != null) type = cleanType(type);
 
-        tokens.push(TType({
+        addToken(TType({
             pos: i,
             kind: TYPEDEF,
             name: RE_TYPEDEF_DECL.matched(1),
@@ -523,7 +537,7 @@ class ConvertHaxe {
             name: parts[parts.length-1],
             alias: alias != null && alias != '' ? alias : null
         };
-        tokens.push(TImport(imp));
+        addToken(TImport(imp));
 
         i += RE_IMPORT.matched(0).length;
 
@@ -543,7 +557,7 @@ class ConvertHaxe {
             pos: i,
             path: path
         };
-        tokens.push(TUsing(use));
+        addToken(TUsing(use));
 
         i += RE_USING.matched(0).length;
 
@@ -594,7 +608,7 @@ class ConvertHaxe {
             }
             expr.add(';');
         } else {
-            tokens.push(TField(field));
+            addToken(TField(field));
         }
 
     } //consumeVar
@@ -801,7 +815,7 @@ class ConvertHaxe {
             expr: body
         };
 
-        tokens.push(TField(field));
+        addToken(TField(field));
 
     } //consumeMethod
 
@@ -832,7 +846,7 @@ class ConvertHaxe {
             // Nothing to add
         } else {
             comment.content = cleanComment(content.toString());
-            tokens.push(TComment(comment));
+            addToken(TComment(comment));
         }
 
     } //consumeSingleLineComment
@@ -864,7 +878,7 @@ class ConvertHaxe {
             // Nothing to add
         } else {
             comment.content = cleanComment(content.toString());
-            tokens.push(TComment(comment));
+            addToken(TComment(comment));
         }
 
     } //consumeMultiLineComment
@@ -997,7 +1011,7 @@ class ConvertHaxe {
         if (expr != null) {
             // Nothing to add
         } else {
-            tokens.push(TMeta(meta));
+            addToken(TMeta(meta));
         }
 
     } //consumeMeta
@@ -1016,7 +1030,7 @@ class ConvertHaxe {
         i++;
         
         if (pack.trim() != '') {
-            tokens.push(TPackage({
+            addToken(TPackage({
                 pos: pos,
                 path: pack.trim()
             }));

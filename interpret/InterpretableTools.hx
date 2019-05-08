@@ -4,26 +4,28 @@ using StringTools;
 
 class InterpretableTools {
 
-    public static function createInterpretClass(content:String):DynamicClass {
+    public static function createInterpretClass(classPack:Array<String>, className:String, content:String):DynamicClass {
 
         // Create env
         var env = new Env();
         env.addDefaultModules();
 
-        // TODO remove hardcoded logic
-        
-        content = content.replace('class Project extends Entity implements Interpretable', 'class Project_interpretable extends Project implements Interpretable');
+        var extendingClassName = className + '_interpretable';
+        var extendingClassPath = extendingClassName;
+        if (classPack.length > 0) extendingClassPath = classPack.join('.') + extendingClassPath;
 
-        env.addModule('Project', DynamicModule.fromStatic(Project));
+        Env.configureInterpretableEnv(env);
 
-        env.addModule('Project_interpretable', DynamicModule.fromString(env, 'Project_interpretable', content, {
+        env.addModule(extendingClassPath, DynamicModule.fromString(env, extendingClassName, content, {
             interpretableOnly: true,
-            allowUnresolvedImports: true
+            allowUnresolvedImports: true,
+            extendingClassName: extendingClassName,
+            extendedClassName: className
         }));
 
         env.link();
 
-        var dynClass = env.modules.get('Project_interpretable').dynamicClasses.get('Project_interpretable');
+        var dynClass = env.modules.get(extendingClassPath).dynamicClasses.get(extendingClassName);
 
         return dynClass;
 

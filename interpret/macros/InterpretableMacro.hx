@@ -13,17 +13,22 @@ class InterpretableMacro {
 
         var fields = Context.getBuildFields();
 
-        #if (!display && !completion)
+#if (!display && !completion)
 
         var hasFieldsWithInterpretMeta = false;
 
         var currentPos = Context.currentPos();
 
-        var filePath = Context.getPosInfos(Context.getLocalClass().get().pos).file;
+        var localClass = Context.getLocalClass().get();
+
+        var filePath = Context.getPosInfos(localClass.pos).file;
         if (!Path.isAbsolute(filePath)) {
             filePath = Path.join([Sys.getCwd(), filePath]);
         }
         filePath = Path.normalize(filePath);
+
+        var classPack:Array<String> = localClass.pack;
+        var className:String = localClass.name;
 
         for (field in fields) {
 
@@ -163,7 +168,7 @@ class InterpretableMacro {
                     macro :interpret.LiveReload,
                     macro new interpret.LiveReload($v{filePath}, function(content:String) {
                         trace('File changed at path ' + $v{filePath});
-                        __interpretClass = interpret.InterpretableTools.createInterpretClass(content);
+                        __interpretClass = interpret.InterpretableTools.createInterpretClass($v{classPack}, $v{className}, content);
                     })
                 ),
                 access: [AStatic],
@@ -178,7 +183,7 @@ class InterpretableMacro {
 
         }
 
-        #end
+#end
 
         return fields;
 

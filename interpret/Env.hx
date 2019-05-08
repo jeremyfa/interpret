@@ -331,6 +331,14 @@ class Env {
 
     } //extractModuleInfo
 
+/// Interpretable additions
+
+    dynamic static public function configureInterpretableEnv(env:Env):Void {
+
+        // Replace this method at runtime with a custom one
+
+    } //configureInterpretableEnv
+
 /// Print
 
     public function toString() {
