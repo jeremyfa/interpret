@@ -598,7 +598,7 @@ class Interpreter extends hscript.Interp {
             dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
-        return super.set(o, f, v);
+        return super.set(o, f, unwrap(v));
 
     } //set
 
