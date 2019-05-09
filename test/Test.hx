@@ -352,7 +352,6 @@ class Test extends buddy.SingleSuite {
 
         });
         
-
         describe("Interpretable macro", {
 
             it("new SomeClass() -> 'some prop'", {
@@ -360,6 +359,15 @@ class Test extends buddy.SingleSuite {
             });
 
         });
+        
+        describe("Wrapping / Unwrapping", {
+
+            it("new WrapTests().test1() -> 'test1'", {
+                run('wrap_tests test_74').should.be('test1');
+            });
+
+        });
+        //*/
 
             // OK constructor with arguments
             // OK module with multiple types (native)

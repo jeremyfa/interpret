@@ -24,7 +24,7 @@ enum RuntimeItem {
 
     ExtensionItem(item:RuntimeItem, ?extendedType:String);
 
-    ClassFieldItem(rawItem:Dynamic, moduleId:Int, name:String);
+    ClassFieldItem(rawItem:Dynamic, moduleId:Int, name:String, isStatic:Bool, type:String, ?argTypes:Array<String>);
 
     ClassItem(rawItem:Dynamic, moduleId:Int, name:String);
 
@@ -194,16 +194,18 @@ class ModuleItemKind {
 
     public inline static var CLASS = 0;
 
-    public inline static var CLASS_FIELD = 1;
+    public inline static var CLASS_FUNC = 1;
 
-    public inline static var ENUM = 2;
+    public inline static var CLASS_VAR = 2;
 
-    public inline static var ENUM_FIELD = 3;
+    public inline static var ENUM = 3;
 
-    public inline static var ABSTRACT = 4;
+    public inline static var ENUM_FIELD = 4;
 
-    public inline static var ABSTRACT_FUNC = 5;
+    public inline static var ABSTRACT = 5;
 
-    public inline static var ABSTRACT_VAR = 6;
+    public inline static var ABSTRACT_FUNC = 6;
+
+    public inline static var ABSTRACT_VAR = 7;
 
 } //ModuleItemKind

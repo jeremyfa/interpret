@@ -135,7 +135,7 @@ class TypeUtils {
             switch (item) {
                 case ExtensionItem(item, _) | SuperClassItem(item):
                     return unwrap(item, env);
-                case ClassFieldItem(rawItem, moduleId, name):
+                case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
                     if (rawItem == null && env != null) {
                         var dotIndex = name.lastIndexOf('.');
                         var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));

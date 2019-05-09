@@ -78,6 +78,10 @@ class Host {
         #if host_another_class
         env.addModule('test.script.AnotherClass', DynamicModule.fromString(env, 'AnotherClass', File.getContent('test/script/AnotherClass.hx')));
         #end
+
+        #if host_wrap_tests
+        env.addModule('test.script.WrapTests', DynamicModule.fromString(env, 'WrapTests', File.getContent('test/script/WrapTests.hx')));
+        #end
         
         #if host_interpreted_group
         env.addModule('test.script.InterpretedGroup', DynamicModule.fromString(env, 'InterpretedGroup', File.getContent('test/script/InterpretedGroup.hx')));
@@ -488,6 +492,11 @@ class Host {
 
         #if host_test_73
         Sys.println(new SomeClass().someProp);
+        #end
+
+        #if host_test_74
+        var dynClass = env.modules.get('test.script.WrapTests').dynamicClasses.get('WrapTests');
+        Sys.println('' + dynClass.call('test1'));
         #end
 
     } //main

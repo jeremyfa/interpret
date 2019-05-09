@@ -72,7 +72,7 @@ class Env {
         var stdModule:DynamicModule = DynamicModule.fromStatic(Std);
 
         // Patch Std.is to work in scripting env
-        stdModule.items.set('Std.is', ClassFieldItem(is, stdModule.id, 'Std.is'));
+        stdModule.items.set('Std.is', ClassFieldItem(is, stdModule.id, 'Std.is', true, 'Bool', [null, null]));
 
         addModule('Std', stdModule);
         addModule('String', DynamicModule.fromStatic(String));
@@ -174,15 +174,6 @@ class Env {
         return null;
 
     } //resolveDynamicClass
-
-    /** Load script code for the given class.
-        This will update the code of any living instance
-        as well as the newly created ones. */
-    public function patchInterpretableClass(interpratableClass:Class<Interpretable>, dynamicClass:DynamicClass):Void {
-
-        // TODO
-
-    } //patchInterpretableClass
 
     /** Like Std.is(), but accepts dynamic/scriptable types as well. */
     public function is(v:Dynamic, t:Dynamic):Bool {

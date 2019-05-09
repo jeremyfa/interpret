@@ -518,6 +518,7 @@ class Interpreter extends hscript.Interp {
             var result = dynMod.items.get(dynMod.typePath + '.' + f);
             return unwrap(result);
         }
+        //trace('SUPER GET $o / $f');
         return super.get(o, f);
 
     } //get
@@ -563,7 +564,7 @@ class Interpreter extends hscript.Interp {
         if (Std.is(o, RuntimeItem)) {
             var moduleItem:RuntimeItem = cast o;
             switch (moduleItem) {
-                case ClassFieldItem(rawItem, moduleId, name) | ExtensionItem(ClassFieldItem(rawItem, moduleId, name), _):
+                case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes) | ExtensionItem(ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes), _):
                     if (rawItem == null) {
                         var dotIndex = name.lastIndexOf('.');
                         var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
@@ -574,7 +575,7 @@ class Interpreter extends hscript.Interp {
                             throw 'Failed to set value for class field ' + name;
                         }
                     }
-                    return super.set(rawItem, f, v);
+                    return super.set(rawItem, f, unwrap(v));
                 case ClassItem(rawItem, moduleId, name):
                     return set(unwrap(o), f, v);
                 default:
@@ -598,6 +599,7 @@ class Interpreter extends hscript.Interp {
             dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
+        //trace('SUPER SET $o $f $v');
         return super.set(o, f, unwrap(v));
 
     } //set
@@ -606,7 +608,7 @@ class Interpreter extends hscript.Interp {
 
         if (Std.is(f, RuntimeItem)) {
             switch (f) {
-                case ExtensionItem(ClassFieldItem(rawItem, moduleId, name), _):
+                case ExtensionItem(ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes), _):
                     if (rawItem == null) {
                         var dotIndex = name.lastIndexOf('.');
                         var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
@@ -625,7 +627,7 @@ class Interpreter extends hscript.Interp {
                         }
                     }
                     return Reflect.callMethod(null, rawItem, [o].concat(args));
-                case ClassFieldItem(rawItem, moduleId, name):
+                case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
                     if (rawItem == null) {
                         var dotIndex = name.lastIndexOf('.');
                         var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
@@ -731,7 +733,7 @@ class Interpreter extends hscript.Interp {
                         case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _):
                             // Unwrap
                             return rawItem;
-                        case ClassFieldItem(rawItem, moduleId, name):
+                        case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
                             if (rawItem == null) {
                                 var dotIndex = name.lastIndexOf('.');
                                 var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
@@ -750,7 +752,7 @@ class Interpreter extends hscript.Interp {
                 case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _):
                     // Unwrap
                     return rawItem;
-                case ClassFieldItem(rawItem, moduleId, name):
+                case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
                     if (rawItem == null) {
                         var dotIndex = name.lastIndexOf('.');
                         var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));

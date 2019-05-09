@@ -1,5 +1,8 @@
 package interpret;
 
+import haxe.macro.Type;
+import haxe.macro.TypeTools;
+import haxe.macro.Type.ClassField;
 #if macro
 import haxe.macro.Expr;
 import haxe.macro.Context;
@@ -65,7 +68,7 @@ class DynamicModule {
 
     } //new
 
-    public function add(name:String, rawItem:Dynamic, kind:Int, ?extra:Dynamic) {
+    public function add(name:String, rawItem:Dynamic, kind:Int, ?extra1:Dynamic, ?extra2:Dynamic, ?extra3:Dynamic, ?extra4:Dynamic) {
 
         _adding = true;
 
@@ -74,17 +77,24 @@ class DynamicModule {
         switch (kind) {
             case ModuleItemKind.CLASS:
                 items.set(name, ClassItem(rawItem, id, name));
-            case ModuleItemKind.CLASS_FIELD:
-                var extendedType:String = extra;
+            case ModuleItemKind.CLASS_FUNC:
+                var isStatic:Bool = extra1;
+                var type:String = extra2;
+                var argTypes:Array<String> = extra3;
+                var extendedType:String = extra4;
                 if (extendedType != null) {
-                    items.set(name, ExtensionItem(ClassFieldItem(rawItem, id, name), extendedType));
+                    items.set(name, ExtensionItem(ClassFieldItem(rawItem, id, name, isStatic, type, argTypes), extendedType));
                 } else {
-                    items.set(name, ClassFieldItem(rawItem, id, name));
+                    items.set(name, ClassFieldItem(rawItem, id, name, isStatic, type, argTypes));
                 }
+            case ModuleItemKind.CLASS_VAR:
+                var isStatic:Bool = extra1;
+                var type:String = extra2;
+                items.set(name, ClassFieldItem(rawItem, id, name, isStatic, type, null));
             case ModuleItemKind.ENUM:
                 items.set(name, EnumItem(rawItem, id, name));
             case ModuleItemKind.ENUM_FIELD:
-                var numArgs:Int = extra;
+                var numArgs:Int = extra1;
                 items.set(name, EnumFieldItem(rawItem, name, numArgs));
             default:
         }
@@ -218,7 +228,7 @@ class DynamicModule {
                                 });
                                 if (!shallow) module.dynamicClasses.set(data.name, dynClass);
                                 currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
-                                module.add(currentClassPath, null, ModuleItemKind.CLASS, null);
+                                module.add(currentClassPath, null, ModuleItemKind.CLASS);
                                 if (!shallow) {
                                     if (data.parent != null) {
                                         module.addSuperClass(currentClassPath, TypeUtils.toResolvedType(module.imports, data.parent.name));
@@ -246,25 +256,29 @@ class DynamicModule {
                         // If only keeping interpretable fields, skip any that doesn't
                         // have @interpret meta
                         if (currentClassPath != null && (!interpretableOnly || interpretableField)) {
-                            if (modifiers.exists('static')) {
-                                // When filtering with interpretableOnly, skip vars as it only works
-                                // on methods for now
-                                if (data.kind == VAR && !interpretableOnly) {
-                                    module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_FIELD, null);
-                                }
-                                else if (data.kind == METHOD) {
-                                    var extendedType = null;
-                                    if (data.args.length > 0) {
-                                        var firstArg = data.args[0];
-                                        if (firstArg.type != null) {
-                                            extendedType = firstArg.type;
-                                        }
+                            var isStatic = modifiers.exists('static');
+                            
+                            // When filtering with interpretableOnly, skip vars as it only works
+                            // on methods for now
+                            if (data.kind == VAR && !interpretableOnly) {
+                                module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_VAR, isStatic, data.type);
+                            }
+                            else if (data.kind == METHOD) {
+                                var extendedType = null;
+                                var argTypes = [];
+                                if (data.args.length > 0) {
+                                    for (arg in data.args) {
+                                        argTypes.push(arg.type);
                                     }
-                                    if (extendedType != null) {
-                                        extendedType = TypeUtils.toResolvedType(module.imports, extendedType);
+                                    var firstArg = data.args[0];
+                                    if (firstArg.type != null) {
+                                        extendedType = firstArg.type;
                                     }
-                                    module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_FIELD, extendedType);
                                 }
+                                if (extendedType != null) {
+                                    extendedType = TypeUtils.toResolvedType(module.imports, extendedType);
+                                }
+                                module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_FUNC, isStatic, data.type, argTypes, extendedType);
                             }
                         }
                         // Reset @interpret meta
@@ -294,6 +308,11 @@ class DynamicModule {
     /** Return a `DynamicModule` instance from a haxe module as it was at compile time. 
         Allows to easily map a Haxe modules to their scriptable equivalent. */
     macro static public function fromStatic(e:Expr) {
+
+        function typeAsString(t:Null<Type>):String {
+            var res:String = t != null ? TypeTools.toString(t) : null;
+            return res != null ? res.replace(' ', '') : null;
+        }
 
         var pos = Context.currentPos();
         var typePath = new Printer().printExpr(e);
@@ -396,11 +415,11 @@ class DynamicModule {
                                             var _args = [];
                                             var _ret = null;
                                             if (ret != null) {
-                                                _ret = haxe.macro.TypeTools.toComplexType(ret);
+                                                _ret = TypeTools.toComplexType(ret);
                                             }
                                             for (arg in args) {
 
-                                                var complexType = haxe.macro.TypeTools.toComplexType(arg.t);
+                                                var complexType = TypeTools.toComplexType(arg.t);
                                                 /*switch (complexType) {
                                                     case TPath(p):
                                                         trace('TPath: name=' + p.name + ' pack=' + p.pack + ' sub=' + p.sub);
@@ -473,9 +492,10 @@ class DynamicModule {
                             toInterface.push([subTypePath, item.t.toString()]);
                         }
 
-                        // Static fields
-                        for (field in t.get().statics.get()) {
-                            if (!field.isPublic) continue;
+                        inline function processField(field:ClassField, isStatic:Bool) {
+
+                            //if (!field.isPublic) continue;
+                            
     #if !interpret_keep_deprecated
                             if (field.meta.has(':deprecated')) continue;
     #end
@@ -483,7 +503,12 @@ class DynamicModule {
                                 case FMethod(k):
                                     switch (field.type) {
                                         case TFun(args, ret):
-                                            if (args.length > 0) {
+                                            var argTypes = [];
+                                            for (arg in args) {
+                                                argTypes.push(typeAsString(arg.t));
+                                            }
+                                            var retType = typeAsString(field.type);
+                                            if (args.length > 0 && isStatic && field.isPublic) {
                                                 var extendedType:String = null;
                                                 switch (args[0].t) {
                                                     case TInst(t, params):
@@ -494,25 +519,48 @@ class DynamicModule {
                                                 }
                                                 toAdd.push([
                                                     subTypePath + '.' + field.name,
-                                                    ModuleItemKind.CLASS_FIELD,
-                                                    extendedType
+                                                    ModuleItemKind.CLASS_FUNC,
+                                                    isStatic,
+                                                    retType,
+                                                    argTypes,
+                                                    extendedType,
+                                                    field.isPublic
                                                 ]);
                                             } else {
                                                 toAdd.push([
                                                     subTypePath + '.' + field.name,
-                                                    ModuleItemKind.CLASS_FIELD,
-                                                    null
+                                                    ModuleItemKind.CLASS_VAR,
+                                                    isStatic,
+                                                    retType,
+                                                    argTypes,
+                                                    null,
+                                                    field.isPublic
                                                 ]);
                                             }
                                         default:
                                     }
                                 default:
+                                    var strType = typeAsString(field.type);
                                     toAdd.push([
                                         subTypePath + '.' + field.name,
-                                        ModuleItemKind.CLASS_FIELD,
-                                        null
+                                        ModuleItemKind.CLASS_VAR,
+                                        isStatic,
+                                        strType,
+                                        null,
+                                        null,
+                                        field.isPublic
                                     ]);
                             }
+
+                        } //processField
+
+                        // Static fields
+                        for (field in t.get().statics.get()) {
+                            processField(field, true);
+                        }
+                        // Instance fields
+                        for (field in t.get().fields.get()) {
+                            processField(field, false);
                         }
                     }
                 
@@ -528,6 +576,7 @@ class DynamicModule {
                     toAdd.push([
                         subTypePath,
                         ModuleItemKind.ENUM,
+                        null,
                         null
                     ]);
 
@@ -537,7 +586,8 @@ class DynamicModule {
                                 toAdd.push([
                                     subTypePath + '.' + item.name,
                                     ModuleItemKind.ENUM_FIELD,
-                                    -1
+                                    -1,
+                                    null
                                 ]);
                             case TFun(args, ret):
                                 /*var argNames = [];
@@ -547,7 +597,8 @@ class DynamicModule {
                                 toAdd.push([
                                     subTypePath + '.' + item.name,
                                     ModuleItemKind.ENUM_FIELD,
-                                    args.length
+                                    args.length,
+                                    null
                                 ]);
                             default:
                         }
@@ -574,11 +625,32 @@ class DynamicModule {
         var addExprs:Array<Expr> = [];
         for (item in toAdd) {
             if (item[1] == ModuleItemKind.ABSTRACT) {
-                var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]});
+                var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]});
                 addExprs.push(expr);
             }
+            else if (item[1] == ModuleItemKind.CLASS_FUNC || item[1] == ModuleItemKind.CLASS_VAR) {
+                var isStatic:Bool = item[2];
+                var isPublic:Bool = item[6];
+                if (isStatic) {
+                    if (isPublic) {
+                        // Static class field (public)
+                        var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
+                        addExprs.push(expr);
+                    }
+                    else {
+                        // Static class field (private)
+                        var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
+                        addExprs.push(expr);
+                    }
+                }
+                else {
+                    // Instance class field
+                    //var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]});
+                    //addExprs.push(expr);
+                }
+            }
             else {
-                var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]});
+                var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
                 addExprs.push(expr);
             }
         }
@@ -622,13 +694,13 @@ class DynamicModule {
                 var isStatic:Bool = item[4];
                 var instanceArgs:Array<FunctionArg> = [].concat(args);
                 var callArgs = [for (arg in args) macro $i{arg.name}];
-                args = [{
-                    name: '_hold',
-                    type: macro :interpret.HoldValue,
-                    opt: false,
-                    value: null
-                }].concat(args);
                 if (!isStatic) {
+                    args = [{
+                        name: '_hold',
+                        type: macro :interpret.HoldValue,
+                        opt: false,
+                        value: null
+                    }].concat(args);
                     instanceArgs.shift();
                     callArgs = [for (arg in instanceArgs) macro $i{arg.name}];
                 }
