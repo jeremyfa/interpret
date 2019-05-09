@@ -1,5 +1,6 @@
 package interpret;
 
+import haxe.macro.Expr.ComplexType;
 import haxe.macro.Type;
 import haxe.macro.TypeTools;
 import haxe.macro.Type.ClassField;
@@ -385,14 +386,14 @@ class DynamicModule {
 
                     if (abstractType != null) {
                         // Abstract implementation code
-                        trace('ABSTRACT IMPL $abstractType');
+                        //trace('ABSTRACT IMPL $abstractType');
 
                         for (field in t.get().statics.get()) {
     #if !interpret_keep_deprecated
                             if (field.meta.has(':deprecated')) continue;
     #end
                             if (!field.isPublic) continue;
-                            trace('field: ' + field.name);
+                            //trace('field: ' + field.name);
 
                             var metas = field.meta.get();
                             var hasImplMeta = false;
@@ -404,7 +405,7 @@ class DynamicModule {
                             }
                             var isStatic = !hasImplMeta;
 
-                            trace('   hasImpl: $hasImplMeta');
+                            //trace('   hasImpl: $hasImplMeta');
                             //trace('type: ' + field.type);
                             //trace(field);
                             switch (field.kind) {
@@ -417,6 +418,13 @@ class DynamicModule {
                                             if (ret != null) {
                                                 _ret = TypeTools.toComplexType(ret);
                                             }
+                                                
+                                            var argTypes = [];
+                                            for (arg in args) {
+                                                argTypes.push(typeAsString(arg.t));
+                                            }
+                                            var retType = typeAsString(ret);
+                                            
                                             for (arg in args) {
 
                                                 var complexType = TypeTools.toComplexType(arg.t);
@@ -436,7 +444,8 @@ class DynamicModule {
                                             toAbstract.push([
                                                 abstractType + '.' + field.name,
                                                 ModuleItemKind.ABSTRACT_FUNC,
-                                                _args, _ret,
+                                                _ret, _args,
+                                                retType, argTypes,
                                                 isStatic
                                             ]);
                                         default:
@@ -450,14 +459,15 @@ class DynamicModule {
                                         case AccNormal | AccCall: true;
                                         default: false;
                                     }
-                                    if (isStatic) {
+                                    //if (isStatic) {
                                         // In that case, that's a static var access
                                         toAbstract.push([
                                             abstractType + '.' + field.name,
                                             ModuleItemKind.ABSTRACT_VAR,
-                                            readable, writable
+                                            readable, writable, isStatic,
+                                            field.type
                                         ]);
-                                    }
+                                    //s}
                                 default:
                             }
                         } 
@@ -616,7 +626,7 @@ class DynamicModule {
 
                     abstractTypes.push(subTypePath);
 
-                    trace('ABSTRACT $t / $params');
+                    //trace('ABSTRACT $t / $params');
 
                 default:
             }
@@ -645,8 +655,8 @@ class DynamicModule {
                 }
                 else {
                     // Instance class field
-                    //var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]});
-                    //addExprs.push(expr);
+                    var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]});
+                    addExprs.push(expr);
                 }
             }
             else {
@@ -689,9 +699,11 @@ class DynamicModule {
                 }
             }
             if (item[1] == ModuleItemKind.ABSTRACT_FUNC) {
-                var args:Array<FunctionArg> = item[2];
-                var ret:ComplexType = item[3];
-                var isStatic:Bool = item[4];
+                var ret:ComplexType = item[2];
+                var args:Array<FunctionArg> = item[3];
+                var retType:String = item[4];
+                var argTypes:Array<String> = item[5];
+                var isStatic:Bool = item[6];
                 var instanceArgs:Array<FunctionArg> = [].concat(args);
                 var callArgs = [for (arg in args) macro $i{arg.name}];
                 if (!isStatic) {
@@ -784,25 +796,102 @@ class DynamicModule {
                 };
                 //trace('fn: ' + fnExpr);
                 var printer = new haxe.macro.Printer();
-                trace('$name: ' + printer.printExpr(fnExpr));
-                var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, null);
+                //trace('$name: ' + printer.printExpr(fnExpr));
+                var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, $v{isStatic}, $v{retType}, $v{argTypes});
                 abstractExprs.push(expr);
             }
             else { // ABSTRACT_VAR
                 //trace('item[0]: ' + item[0]);
                 var readable:Bool = item[2];
                 var writable:Bool = item[3];
-                if (readable) {
-                    var expr = macro mod.add($v{item[0]}, function() {
-                        return $p{item[0].split('.')};
-                    }, $v{item[1]}, 0);
-                    abstractExprs.push(expr);
+                var isStatic:Bool = item[4];
+                var complexType:ComplexType = TypeTools.toComplexType(item[5]);
+                var type:String = typeAsString(item[5]);
+                if (isStatic) {
+                    if (readable) {
+                        var expr = macro mod.add($v{item[0]}, function() {
+                            return $p{item[0].split('.')};
+                        }, $v{item[1]}, 0, $v{isStatic}, $v{type});
+                        abstractExprs.push(expr);
+                    }
+                    if (writable) {
+                        var expr = macro mod.add($v{item[0]}, function(value) {
+                            return $p{item[0].split('.')} = value;
+                        }, $v{item[1]}, 1, $v{isStatic}, $v{type});
+                        abstractExprs.push(expr);
+                    }
                 }
-                if (writable) {
-                    var expr = macro mod.add($v{item[0]}, function(value) {
-                        return $p{item[0].split('.')} = value;
-                    }, $v{item[1]}, 1);
-                    abstractExprs.push(expr);
+                else {
+                    var args = [{
+                        name: '_hold',
+                        type: macro :interpret.HoldValue,
+                        opt: false,
+                        value: null
+                    },{
+                        name: '_this',
+                        type: TPath({
+                            name: abstractName,
+                            pack: abstractPack,
+                            params: []
+                        }),
+                        opt: false,
+                        value: null
+                    }];
+
+                    if (readable) {
+
+                        var fnBody = macro {
+                            var _res = $p{['_this', name]};
+                            _hold.value = _this;
+                            return _res;
+                        };
+
+                        var fnExpr = {
+                            expr: EFunction(null, {
+                                args: args,
+                                expr: {
+                                    expr: fnBody.expr,
+                                    pos: pos
+                                },
+                                params: [],
+                                ret: null
+                            }),
+                            pos: pos
+                        };
+
+                        var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, 0, $v{isStatic}, $v{type});
+                        abstractExprs.push(expr);
+                    }
+                    if (writable) {
+                        args = args.concat([{
+                            name: 'value',
+                            type: complexType,
+                            opt: false,
+                            value: null
+                        }]);
+
+                        var fnBody = macro {
+                            var _res = $p{['_this', name]} = value;
+                            _hold.value = _this;
+                            return _res;
+                        };
+
+                        var fnExpr = {
+                            expr: EFunction(null, {
+                                args: args,
+                                expr: {
+                                    expr: fnBody.expr,
+                                    pos: pos
+                                },
+                                params: [],
+                                ret: null
+                            }),
+                            pos: pos
+                        };
+
+                        var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, 1, $v{isStatic}, $v{type});
+                        abstractExprs.push(expr);
+                    }
                 }
             }
         }
