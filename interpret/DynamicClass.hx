@@ -542,7 +542,7 @@ class DynamicClass {
                             if (superDynamicClass == null) {
                                 var prevSelf = interpreter._self;
                                 interpreter._self = context;
-                                superStaticClass = TypeUtils.unwrap(interpreter.resolveClass(name), env);
+                                superStaticClass = TypeUtils.unwrap(interpreter.resolveInstanciable(name), env);
                                 interpreter._self = prevSelf;
                             }
 

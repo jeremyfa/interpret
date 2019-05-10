@@ -172,8 +172,74 @@ class TypeUtils {
             }
         }
 
+        if (Std.is(value, DynamicAbstract)) {
+            var abs:DynamicAbstract = cast value;
+            return abs.value;
+        }
+
         return value;
 
     } //unwrap
+
+    public static function wrapIfNeeded(value:Dynamic, type:String, ?env:Env):Dynamic {
+
+        if (value != null && Std.is(value, RuntimeItem)) {
+            // Already wrapped
+            return value;
+        }
+
+        if (env != null) {
+            var resolved = env.resolveItemByTypePath(type);
+            if (resolved != null) {
+                switch (resolved) {
+                    // Abstract value need to be wrapped to be recognizable by interpret
+                    case AbstractItem(rawItem, moduleId, name, runtimeType):
+                        return new DynamicAbstract(env, resolved, value);
+                    
+                    // These don't need wrapping
+                    //
+                    case ClassItem(rawItem, moduleId, name):
+                        return value;
+                    case EnumItem(rawItem, moduleId, name):
+                        return value;
+                    case ExtensionItem(item, extendedType):
+                        return value;
+                    case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                        return value;
+                    case AbstractFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                        return value;
+                    case EnumFieldItem(rawItem, name, numArgs):
+                        return value;
+                    case PackageItem(pack):
+                        return value;
+                    case SuperClassItem(item):
+                        return value;
+                }
+            }
+        }
+
+        return value; // TODO
+
+    } //wrapIfNeeded
+
+    /*public static function shouldWrapFromType(value:Dynamic, forType:String, ?env:Env):Bool {
+
+        if (env != null) {
+            // TODO
+        }
+
+        return false;
+
+    } //shouldWrapFromType
+
+    public static function shouldUnwrapForType(value:Dynamic, forType:String, ?env:Env):Bool {
+
+        if (env != null) {
+            // TODO
+        }
+
+        return false;
+
+    } //shouldUnwrapForType*/
 
 } //TypeUtils

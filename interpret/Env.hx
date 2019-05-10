@@ -34,6 +34,9 @@ class Env {
     /** Resolved dynamic classes */
     var resolvedDynamicClasses:Map<String,DynamicClass> = new Map();
 
+    /** Resolved items */
+    var resolvedItems:Map<String,RuntimeItem> = new Map();
+
     public function new() {
 
     } //new
@@ -126,6 +129,33 @@ class Env {
         return interfaces.get(alias);
 
     } //getInterfaces
+
+    public function resolveItemByTypePath(name:String):RuntimeItem {
+
+        var resolved = resolvedItems.get(name);
+        if (resolved != null) return resolved;
+
+        var alias = aliases.get(name);
+
+        for (module in modules) {
+            if (module.items.exists(name)) {
+                resolved = module.items.get(name);
+                resolvedItems.set(name, resolved);
+                return resolved;
+            }
+            if (alias != null) {
+                if (module.items.exists(alias)) {
+                    resolved = module.items.get(alias);
+                    resolvedItems.set(name, resolved);
+                    resolvedItems.set(alias, resolved);
+                    return resolved;
+                }
+            }
+        }
+
+        return resolved;
+
+    } //resolveItemByTypePath
 
     @:noCompletion
     public function resolveDynamicClass(moduleId:Int, name:String):DynamicClass {

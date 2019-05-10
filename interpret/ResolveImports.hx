@@ -105,7 +105,7 @@ class ResolveImports {
             }
             else {
                 switch (mainItem) {
-                    case ClassFieldItem(_) | ExtensionItem(_, _) | EnumFieldItem(_, _, _):
+                    case ClassFieldItem(_) | ExtensionItem(_, _) | EnumFieldItem(_, _, _) | AbstractFieldItem(_, _, _, _, _, _):
                         // Class/Enum field import
                         if (data.alias != null) {
                             add(data.alias, mainItem);
@@ -113,8 +113,8 @@ class ResolveImports {
                         else {
                             add(parts[parts.length-1], mainItem);
                         }
-                    case ClassItem(_, _) | EnumItem(_, _, _):
-                        // Class/Enum import
+                    case ClassItem(_, _) | EnumItem(_, _, _) | AbstractItem(_, _, _, _):
+                        // Class/Enum/Abstract import
                         if (data.alias != null) {
                             add(data.alias, mainItem);
                         }

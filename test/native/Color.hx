@@ -674,7 +674,7 @@ abstract Color(Int) from Int from UInt to Int to UInt
 
     inline public function toString() {
 
-        return toHexString();
+        return this >= 0 ? toHexString() : 'Color(' + this + ')';
 
     } //toString
 

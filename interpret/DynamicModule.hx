@@ -106,7 +106,7 @@ class DynamicModule {
                 var isStatic:Bool = extra1;
                 var type:String = extra2;
                 var readWrite:Int = extra3;
-                var accessor:String = extra3 == 0 ? 'get_' + name : 'set_' + name;
+                var accessor:String = readWrite == 0 ? name + '#get' : name + '#set';
                 items.set(accessor, AbstractFieldItem(rawItem, id, name, isStatic, type, null));
 
             // TODO abstract
@@ -331,8 +331,14 @@ class DynamicModule {
     macro static public function fromStatic(e:Expr) {
 
         function typeAsString(t:Null<Type>):String {
-            var res:String = t != null ? TypeTools.toString(t) : null;
-            return res != null ? res.replace(' ', '') : null;
+            if (t == null) return null;
+            switch (t) {
+                case TLazy(f):
+                    return typeAsString(f());
+                default:
+                    var res:String = t != null ? TypeTools.toString(t) : null;
+                    return res != null ? res.replace(' ', '') : null;
+            }
         }
 
         var pos = Context.currentPos();
@@ -427,13 +433,20 @@ class DynamicModule {
                             }
                             var isStatic = !hasImplMeta;
 
+                            var fieldType = field.type;
+                            switch (fieldType) {
+                                case TLazy(f):
+                                    fieldType = f();
+                                default:
+                            }
+
                             //trace('   hasImpl: $hasImplMeta');
                             //trace('type: ' + field.type);
                             //trace(field);
                             switch (field.kind) {
 
                                 case FMethod(k):
-                                    switch (field.type) {
+                                    switch (fieldType) {
                                         case TFun(args, ret):
                                             var _args = [];
                                             var _ret = null;
@@ -494,7 +507,7 @@ class DynamicModule {
                                             abstractType + '.' + field.name,
                                             ModuleItemKind.ABSTRACT_VAR,
                                             readable, writable, isStatic,
-                                            field.type
+                                            fieldType
                                         ]);
                                     //s}
                                 default:
@@ -538,15 +551,23 @@ class DynamicModule {
     #if !interpret_keep_deprecated
                             if (field.meta.has(':deprecated')) continue;
     #end
+
+                            var fieldType = field.type;
+                            switch (fieldType) {
+                                case TLazy(f):
+                                    fieldType = f();
+                                default:
+                            }
+
                             switch (field.kind) {
                                 case FMethod(k):
-                                    switch (field.type) {
+                                    switch (fieldType) {
                                         case TFun(args, ret):
                                             var argTypes = [];
                                             for (arg in args) {
                                                 argTypes.push(typeAsString(arg.t));
                                             }
-                                            var retType = typeAsString(field.type);
+                                            var retType = typeAsString(fieldType);
                                             if (args.length > 0 && isStatic && field.isPublic) {
                                                 var extendedType:String = null;
                                                 switch (args[0].t) {
@@ -579,7 +600,7 @@ class DynamicModule {
                                         default:
                                     }
                                 default:
-                                    var strType = typeAsString(field.type);
+                                    var strType = typeAsString(fieldType);
                                     toAdd.push([
                                         subTypePath + '.' + field.name,
                                         ModuleItemKind.CLASS_VAR,
@@ -745,7 +766,7 @@ class DynamicModule {
                 if (!isStatic) {
                     args = [{
                         name: '_hold',
-                        type: macro :interpret.DynamicAbstractValue,
+                        type: macro :interpret.DynamicAbstract,
                         opt: false,
                         value: null
                     }].concat(args);
@@ -878,7 +899,7 @@ class DynamicModule {
                 else {
                     var args = [{
                         name: '_hold',
-                        type: macro :interpret.DynamicAbstractValue,
+                        type: macro :interpret.DynamicAbstract,
                         opt: false,
                         value: null
                     },{
@@ -913,7 +934,7 @@ class DynamicModule {
                             pos: pos
                         };
 
-                        var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, 0, $v{isStatic}, $v{type});
+                        var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, $v{isStatic}, $v{type}, 0);
                         abstractExprs.push(expr);
                     }
                     if (writable) {
@@ -943,7 +964,7 @@ class DynamicModule {
                             pos: pos
                         };
 
-                        var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, 1, $v{isStatic}, $v{type});
+                        var expr = macro mod.add($v{item[0]}, $fnExpr, $v{item[1]}, $v{isStatic}, $v{type}, 1);
                         abstractExprs.push(expr);
                     }
                 }

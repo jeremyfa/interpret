@@ -15,7 +15,7 @@ class Test extends buddy.SingleSuite {
             untyped require('source-map-support').install();
         } catch (e:Dynamic) {}
 #end
-        //*
+
         describe("Static method calls", {
 
             it("BasicClass.staticHello('Test 01') -> 'Static Hello Test 01'", {
@@ -359,7 +359,6 @@ class Test extends buddy.SingleSuite {
             });
 
         });
-        //*/
         
         describe("Wrapping / Unwrapping", {
 
@@ -368,6 +367,40 @@ class Test extends buddy.SingleSuite {
             });
 
         });
+        
+        describe("Abstracts", {
+
+            it("new AbstractTests().test1() -> '0xFF00FF'", {
+                run('abstract_tests test_75').should.be('0xFF00FF');
+            });
+
+            it("new AbstractTests().test2() -> '0xFF0000'", {
+                run('abstract_tests test_76').should.be('0xFF0000');
+            });
+
+            it("new AbstractTests().test3() -> '128'", {
+                run('abstract_tests test_77').should.be('128');
+            });
+
+            it("new AbstractTests().test4() -> '0x0000FF'", {
+                run('abstract_tests test_78').should.be('0x0000FF');
+            });
+
+            it("new AbstractTests().test5() -> 'Color(-1) / Color(-2)'", {
+                run('abstract_tests test_79').should.be('Color(-1) / Color(-2)');
+            });
+
+            it("new AbstractTests().test6() -> '0x00FF00'", {
+                run('abstract_tests test_80').should.be('0x00FF00');
+            });
+
+            it("new AbstractTests().test7() -> '0x00FF00 / #00FF00'", {
+                run('abstract_tests test_81').should.be('0x00FF00 / #00FF00');
+            });
+
+        });
+
+        //*/
 
             // OK constructor with arguments
             // OK module with multiple types (native)

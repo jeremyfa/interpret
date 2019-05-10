@@ -38,6 +38,10 @@ class Host {
         env.addModule('Sys', DynamicModule.fromStatic(Sys));
         #end
 
+        #if host_abstract_tests
+        env.addModule('test.native.Color', DynamicModule.fromStatic(test.native.Color));
+        #end
+
         // Modules from interpreted code
         #if host_basic_class
         env.addModule('test.script.BasicClass', DynamicModule.fromString(env, 'BasicClass', File.getContent('test/script/BasicClass.hx')));
@@ -81,6 +85,10 @@ class Host {
 
         #if host_wrap_tests
         env.addModule('test.script.WrapTests', DynamicModule.fromString(env, 'WrapTests', File.getContent('test/script/WrapTests.hx')));
+        #end
+
+        #if host_abstract_tests
+        env.addModule('test.script.AbstractTests', DynamicModule.fromString(env, 'AbstractTests', File.getContent('test/script/AbstractTests.hx')));
         #end
         
         #if host_interpreted_group
@@ -497,6 +505,41 @@ class Host {
         #if host_test_74
         var dynClass = env.modules.get('test.script.WrapTests').dynamicClasses.get('WrapTests');
         Sys.println('' + dynClass.call('test1'));
+        #end
+
+        #if host_test_75
+        var dynClass = env.modules.get('test.script.AbstractTests').dynamicClasses.get('AbstractTests');
+        Sys.println('' + dynClass.call('test1'));
+        #end
+
+        #if host_test_76
+        var dynClass = env.modules.get('test.script.AbstractTests').dynamicClasses.get('AbstractTests');
+        Sys.println('' + dynClass.call('test2'));
+        #end
+
+        #if host_test_77
+        var dynClass = env.modules.get('test.script.AbstractTests').dynamicClasses.get('AbstractTests');
+        Sys.println('' + dynClass.call('test3'));
+        #end
+
+        #if host_test_78
+        var dynClass = env.modules.get('test.script.AbstractTests').dynamicClasses.get('AbstractTests');
+        Sys.println('' + dynClass.call('test4'));
+        #end
+
+        #if host_test_79
+        var dynClass = env.modules.get('test.script.AbstractTests').dynamicClasses.get('AbstractTests');
+        Sys.println('' + dynClass.call('test5'));
+        #end
+
+        #if host_test_80
+        var dynClass = env.modules.get('test.script.AbstractTests').dynamicClasses.get('AbstractTests');
+        Sys.println('' + dynClass.call('test6'));
+        #end
+
+        #if host_test_81
+        var dynClass = env.modules.get('test.script.AbstractTests').dynamicClasses.get('AbstractTests');
+        Sys.println('' + dynClass.call('test7'));
         #end
 
     } //main

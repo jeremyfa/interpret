@@ -478,15 +478,9 @@ class Interpreter extends hscript.Interp {
                             return resolved;
                     }
                 case PackageItem(pack):
-                    //trace('IS PACK $pack.$f');
                     return unwrap(pack.getSub(f));
                 case AbstractItem(rawItem, moduleId, name, runtimeType):
-                    var module = @:privateAccess env.modulesById.get(moduleId);
-                    var key = name + '.' + f;
-                    if (module.items.exists(key)) {
-                        return module.items.get(key);
-                    }
-                    return null;
+                    return DynamicAbstract.getStatic(o, env, null, f, false);
                 case AbstractFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
                     return super.get(rawItem, f);
                 case EnumFieldItem(rawItem, name, numArgs):
@@ -520,6 +514,10 @@ class Interpreter extends hscript.Interp {
             if (resolved != null) {
                 return resolved;
             }
+        }
+        else if (Std.is(o, DynamicAbstract)) {
+            var abs:DynamicAbstract = cast o;
+            return abs.get(f, false);
         }
         else if (Std.is(o, DynamicPackage)) {
             var dynPack:DynamicPackage = cast o;
@@ -592,7 +590,19 @@ class Interpreter extends hscript.Interp {
                     return super.set(rawItem, f, unwrap(v));
                 case ClassItem(rawItem, moduleId, name):
                     return set(unwrap(o), f, v);
-                default:
+                case AbstractItem(rawItem, moduleId, name, runtimeType):
+                    return DynamicAbstract.setStatic(o, env, null, f, v, false);
+                case AbstractFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                    return null;
+                case EnumFieldItem(rawItem, name, numArgs):
+                    return null;
+                case SuperClassItem(item):
+                    return null;
+                case ExtensionItem(item, extendedType):
+                    return null;
+                case EnumItem(rawItem, moduleId, name):
+                    return null;
+                case PackageItem(pack):
                     return null;
             }
         }
@@ -612,6 +622,10 @@ class Interpreter extends hscript.Interp {
             var result = dynClass.set(f, v);
             dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
+        }
+        else if (Std.is(o, DynamicAbstract)) {
+            var abs:DynamicAbstract = cast o;
+            return abs.set(f, v, false);
         }
         //trace('SUPER SET $o $f $v');
         return super.set(o, f, unwrap(v));
@@ -660,6 +674,19 @@ class Interpreter extends hscript.Interp {
                         }
                     }
                     return Reflect.callMethod(o, rawItem, args);
+                case AbstractFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                    var fieldName = name;
+                    var dotIndex = fieldName.lastIndexOf('.');
+                    if (dotIndex != -1) {
+                        fieldName = fieldName.substring(dotIndex + 1);
+                    }
+                    if (Std.is(o, DynamicAbstract)) {
+                        var abs:DynamicAbstract = cast o;
+                        return abs.call(fieldName, args, false);
+                    }
+                    else {
+                        return DynamicAbstract.callStatic(o, env, null, fieldName, args, false);
+                    }
                 case EnumFieldItem(rawItem, _, _):
                     if (Std.is(rawItem, DynamicClass)) {
                         return null; // TODO?
@@ -697,7 +724,7 @@ class Interpreter extends hscript.Interp {
         return super.call(o, f, args);
     }
 
-    public function resolveClass(cl:String):Dynamic {
+    public function resolveInstanciable(cl:String):Dynamic {
 
         var parts = cl.split('.');
         var resolved:Dynamic = null;
@@ -711,23 +738,40 @@ class Interpreter extends hscript.Interp {
         }
         return resolved;
 
-    } //resolveClass
+    } //resolveInstanciable
 
     override function cnew(cl:String, args:Array<Dynamic>):Dynamic {
 
-        // Resolve class
-        var clazz = resolveClass(cl);
+        // Resolve instanciable
+        var instanciable = resolveInstanciable(cl);
 
+        // Abstract?
+        if (Std.is(instanciable, RuntimeItem)) {
+            var item:RuntimeItem = cast instanciable;
+            switch (item) {
+                case ClassItem(rawItem, moduleId, name):
+                    if (Std.is(rawItem, DynamicClass)) {
+                        var dynClass:DynamicClass = cast rawItem;
+                        return dynClass.createInstance(args);
+                    }
+                    else if (Std.is(rawItem, Class)) {
+                        return Type.createInstance(rawItem, args);
+                    }
+                case AbstractItem(rawItem, moduleId, name, runtimeType):
+                    return DynamicAbstract.createInstance(env, item, args);
+                default:
+            }
+        }
         // Dynamic class?
-        if (Std.is(clazz, DynamicClass)) {
-            var dynClass:DynamicClass = cast clazz;
+        if (Std.is(instanciable, DynamicClass)) {
+            var dynClass:DynamicClass = cast instanciable;
             return dynClass.createInstance(args);
         }
-        else if (Std.is(clazz, Class)) {
-            return Type.createInstance(clazz, args);
+        else if (Std.is(instanciable, Class)) {
+            return Type.createInstance(instanciable, args);
         }
 
-        trace('cnew $clazz $cl $args');
+        trace('cnew $instanciable $cl $args');
         return super.cnew(cl, args);
 
     } //cnew
@@ -822,9 +866,9 @@ class Interpreter extends hscript.Interp {
             }
         }
         
-        if (Std.is(value, DynamicAbstractValue)) {
-            var abstractValue:DynamicAbstractValue = cast value;
-            return abstractValue.value;
+        if (Std.is(value, DynamicAbstract)) {
+            var abs:DynamicAbstract = cast value;
+            return abs.value;
         }
 
         return value;
