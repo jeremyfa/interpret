@@ -504,7 +504,7 @@ class Interpreter extends hscript.Interp {
             dynClass.initIfNeeded();
             var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
             dynClass.interpreter._queryingInterpreter = this;
-            var result = dynClass.get(f);
+            var result = dynClass.get(f, false);
             dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
@@ -581,7 +581,7 @@ class Interpreter extends hscript.Interp {
                         var dotIndex = name.lastIndexOf('.');
                         var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
                         if (dynClass != null) {
-                            return set(dynClass.get(name.substring(dotIndex + 1)), f, v);
+                            return set(dynClass.get(name.substring(dotIndex + 1), false), f, v);
                         }
                         else {
                             throw 'Failed to set value for class field ' + name;
@@ -610,7 +610,7 @@ class Interpreter extends hscript.Interp {
             var dynInst:DynamicInstance = cast o;
             var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
             dynInst.interpreter._queryingInterpreter = this;
-            var result = dynInst.set(f, v);
+            var result = dynInst.set(f, v, false);
             dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
@@ -619,7 +619,7 @@ class Interpreter extends hscript.Interp {
             dynClass.initIfNeeded();
             var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
             dynClass.interpreter._queryingInterpreter = this;
-            var result = dynClass.set(f, v);
+            var result = dynClass.set(f, v, false);
             dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
@@ -641,7 +641,7 @@ class Interpreter extends hscript.Interp {
                         var dotIndex = name.lastIndexOf('.');
                         var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
                         if (dynClass != null) {
-                            return dynClass.call(name.substring(dotIndex + 1), [o].concat(args));
+                            return dynClass.call(name.substring(dotIndex + 1), [o].concat(args), false);
                         }
                         else {
                             throw 'Unresolved dynamic extension: ' + name;
@@ -660,7 +660,7 @@ class Interpreter extends hscript.Interp {
                         var dotIndex = name.lastIndexOf('.');
                         var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
                         if (dynClass != null) {
-                            return dynClass.call(name.substring(dotIndex + 1), args);
+                            return dynClass.call(name.substring(dotIndex + 1), args, false);
                         }
                         else {
                             throw 'Unresolved dynamic class field: ' + name;
