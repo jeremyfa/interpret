@@ -36,7 +36,6 @@ class TypeUtils {
         }
 
         if (Std.is(obj, RuntimeItem)) {
-            // TODO resolve dynamic classes
             var item:RuntimeItem = cast obj;
             switch (item) {
                 case ExtensionItem(item, extendedType):
@@ -51,7 +50,11 @@ class TypeUtils {
                     return name.substring(0, name.lastIndexOf('.'));
                 case PackageItem(pack):
                     return 'Dynamic';
-                default:
+                case AbstractItem(rawItem, moduleId, name, runtimeType):
+                    return runtimeType;
+                case AbstractFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                    return typeOf(rawItem);
+                case SuperClassItem(item):
             }
         }
 
@@ -156,6 +159,14 @@ class TypeUtils {
                     return rawItem;
                 case EnumFieldItem(rawItem, _, _):
                     return rawItem;
+                
+                // These cases cannot (and should not) be unwrapped
+                // as there is no raw equivalent at runtime
+                //
+                case AbstractItem(rawItem, moduleId, name, runtimeType):
+                    return value;
+                case AbstractFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                    return value;
                 case PackageItem(pack):
                     return value;
             }

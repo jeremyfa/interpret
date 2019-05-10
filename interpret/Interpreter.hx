@@ -456,7 +456,8 @@ class Interpreter extends hscript.Interp {
                     var module = @:privateAccess env.modulesById.get(moduleId);
                     var key = name + '.' + f;
                     if (module.items.exists(key)) {
-                        return unwrap(module.items.get(name + '.' + f));
+                        var item = module.items.get(key);
+                        return unwrapExtensionItem(item);
                     }
                     else if (existsAsExtension(f)) {
                         var typePath = TypeUtils.typeOf(o, env);
@@ -479,7 +480,20 @@ class Interpreter extends hscript.Interp {
                 case PackageItem(pack):
                     //trace('IS PACK $pack.$f');
                     return unwrap(pack.getSub(f));
-                default:
+                case AbstractItem(rawItem, moduleId, name, runtimeType):
+                    var module = @:privateAccess env.modulesById.get(moduleId);
+                    var key = name + '.' + f;
+                    if (module.items.exists(key)) {
+                        return module.items.get(key);
+                    }
+                    return null;
+                case AbstractFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                    return super.get(rawItem, f);
+                case EnumFieldItem(rawItem, name, numArgs):
+                    return null;
+                case SuperClassItem(item):
+                    return null;
+                case ExtensionItem(item, extendedType):
                     return null;
             }
         }
@@ -718,6 +732,44 @@ class Interpreter extends hscript.Interp {
 
     } //cnew
 
+    function unwrapExtensionItem(value:Dynamic):Dynamic {
+
+        if (value == null) return null;
+        if (Std.is(value, RuntimeItem)) {
+            var item:RuntimeItem = cast value;
+            switch (item) {
+                case ExtensionItem(subItem, _):
+                    // We ensure this won't be considered as an extension item
+                    // but just a regular field
+                    switch (subItem) {
+                        case EnumFieldItem(rawItem, _, _) | EnumItem(rawItem, _, _):
+                            // Unwrap
+                            return rawItem;
+                        case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                            if (rawItem == null) {
+                                var dotIndex = name.lastIndexOf('.');
+                                var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
+                                if (dynClass != null) return dynClass.get(name.substring(dotIndex + 1));
+                            }
+                            return rawItem;
+                        case ClassItem(rawItem, moduleId, name):
+                            if (rawItem == null) {
+                                var dynClass = env.resolveDynamicClass(moduleId, name);
+                                if (dynClass != null) return dynClass;
+                            }
+                            return rawItem;
+                        default:
+                            return subItem;
+                    }
+                default:
+                    return value;
+            }
+        }
+
+        return value;
+
+    } //unwrapExtensionItem
+
     function unwrap(value:Dynamic):Dynamic {
 
         if (value == null) return null;
@@ -768,6 +820,11 @@ class Interpreter extends hscript.Interp {
                 default:
                     return value;
             }
+        }
+        
+        if (Std.is(value, DynamicAbstractValue)) {
+            var abstractValue:DynamicAbstractValue = cast value;
+            return abstractValue.value;
         }
 
         return value;

@@ -15,7 +15,7 @@ class Test extends buddy.SingleSuite {
             untyped require('source-map-support').install();
         } catch (e:Dynamic) {}
 #end
-        
+        //*
         describe("Static method calls", {
 
             it("BasicClass.staticHello('Test 01') -> 'Static Hello Test 01'", {
@@ -359,6 +359,7 @@ class Test extends buddy.SingleSuite {
             });
 
         });
+        //*/
         
         describe("Wrapping / Unwrapping", {
 
@@ -367,7 +368,6 @@ class Test extends buddy.SingleSuite {
             });
 
         });
-        //*/
 
             // OK constructor with arguments
             // OK module with multiple types (native)
@@ -381,6 +381,9 @@ class Test extends buddy.SingleSuite {
             // OK call instance method from instance method
             // OK instanciate native class in code (with args)
             // OK instanciate dynamic class in code (with args)
+
+            // TODO assign instance to a native property of a parent class type
+            // TODO get a property from a native object which is an abstract, change it and put it back
 
             // TODO? get property from extension getter
             // TODO? assign property from extension setter

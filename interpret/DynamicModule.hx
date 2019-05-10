@@ -76,6 +76,7 @@ class DynamicModule {
         if (items == null) items = new Map();
 
         switch (kind) {
+
             case ModuleItemKind.CLASS:
                 items.set(name, ClassItem(rawItem, id, name));
             case ModuleItemKind.CLASS_FUNC:
@@ -92,11 +93,30 @@ class DynamicModule {
                 var isStatic:Bool = extra1;
                 var type:String = extra2;
                 items.set(name, ClassFieldItem(rawItem, id, name, isStatic, type, null));
+            
+            case ModuleItemKind.ABSTRACT:
+                var runtimeType:String = extra1;
+                items.set(name, AbstractItem(rawItem, id, name, runtimeType));
+            case ModuleItemKind.ABSTRACT_FUNC:
+                var isStatic:Bool = extra1;
+                var type:String = extra2;
+                var argTypes:Array<String> = extra3;
+                items.set(name, AbstractFieldItem(rawItem, id, name, isStatic, type, argTypes));
+            case ModuleItemKind.ABSTRACT_VAR:
+                var isStatic:Bool = extra1;
+                var type:String = extra2;
+                var readWrite:Int = extra3;
+                var accessor:String = extra3 == 0 ? 'get_' + name : 'set_' + name;
+                items.set(accessor, AbstractFieldItem(rawItem, id, name, isStatic, type, null));
+
+            // TODO abstract
+
             case ModuleItemKind.ENUM:
                 items.set(name, EnumItem(rawItem, id, name));
             case ModuleItemKind.ENUM_FIELD:
                 var numArgs:Int = extra1;
                 items.set(name, EnumFieldItem(rawItem, name, numArgs));
+
             default:
         }
 
@@ -341,6 +361,8 @@ class DynamicModule {
         var toAlias:Array<Array<String>> = [];
         var toSuperClass:Array<Array<String>> = [];
         var toInterface:Array<Array<String>> = [];
+
+        var abstractInfos:Map<String,Array<Dynamic>> = new Map();
         
         var currentPos = Context.currentPos();
         
@@ -392,8 +414,8 @@ class DynamicModule {
     #if !interpret_keep_deprecated
                             if (field.meta.has(':deprecated')) continue;
     #end
-                            if (!field.isPublic) continue;
                             //trace('field: ' + field.name);
+                            if (!field.isPublic) continue;
 
                             var metas = field.meta.get();
                             var hasImplMeta = false;
@@ -417,6 +439,13 @@ class DynamicModule {
                                             var _ret = null;
                                             if (ret != null) {
                                                 _ret = TypeTools.toComplexType(ret);
+                                            }
+
+                                            if (!isStatic && args.length > 0) {
+                                                var info = abstractInfos.get(abstractType);
+                                                if (info != null && info[2] == null) {
+                                                    info[2] = typeAsString(args[0].t);
+                                                }
                                             }
                                                 
                                             var argTypes = [];
@@ -622,11 +651,11 @@ class DynamicModule {
                         subTypePath = typePath + rawTypePath.substring(rawTypePath.lastIndexOf('.'));
                         toAlias.push([rawTypePath, subTypePath]);
                     }
-                    toAdd.push([subTypePath, ModuleItemKind.ABSTRACT]);
+                    var info:Array<Dynamic> = [subTypePath, ModuleItemKind.ABSTRACT];
+                    abstractInfos.set(subTypePath, info);
+                    toAdd.push(info);
 
                     abstractTypes.push(subTypePath);
-
-                    //trace('ABSTRACT $t / $params');
 
                 default:
             }
@@ -706,19 +735,26 @@ class DynamicModule {
                 var isStatic:Bool = item[6];
                 var instanceArgs:Array<FunctionArg> = [].concat(args);
                 var callArgs = [for (arg in args) macro $i{arg.name}];
+                var isConstructor = (name == '_new' || name == 'new');
+                if (isConstructor) {
+                    name = 'new';
+                    var fullName:String = item[0];
+                    if (fullName.endsWith('_new')) fullName = fullName.substring(0, fullName.length - 4) + 'new';
+                    item[0] = fullName;
+                }
                 if (!isStatic) {
                     args = [{
                         name: '_hold',
-                        type: macro :interpret.HoldValue,
+                        type: macro :interpret.DynamicAbstractValue,
                         opt: false,
                         value: null
                     }].concat(args);
-                    instanceArgs.shift();
+                    if (!isConstructor) instanceArgs.shift();
                     callArgs = [for (arg in instanceArgs) macro $i{arg.name}];
                 }
                 var isGetter = name.startsWith('get_');
                 var isSetter = name.startsWith('set_');
-                if (isGetter || isSetter) name = name.substring(4);
+                if (isGetter || isSetter) continue; // Skip getters/setters, handled as ABSTRACT_VAR
 
                 var isVoidRet = false;
                 if (ret == null) {
@@ -734,7 +770,7 @@ class DynamicModule {
                     }
                 }
 
-                if (!isStatic) {
+                if (!isStatic && !isConstructor) {
                     var thisArg = args[1];
                     thisArg.name = '_this';
                     thisArg.type = TPath({
@@ -764,18 +800,36 @@ class DynamicModule {
                     pos: currentPos
                 }*/
 
-                var fnBody = switch [isStatic, isVoidRet] {
-                    case [true, true]: macro {
+                var newExpr = null;
+                if (isConstructor) {
+                    args = [].concat(args);
+                    newExpr = {
+                        expr: ENew({
+                            name: abstractName,
+                            pack: abstractPack,
+                            params: []
+                        }, callArgs),
+                        pos: currentPos
+                    }
+                }
+
+                var fnBody = switch [isConstructor, isStatic, isVoidRet] {
+                    case [true, _, _]: macro {
+                        var _this = $newExpr;
+                        _hold.value = _this;
+                        return _this;
+                    };
+                    case [_, true, true]: macro {
                         $p{item[0].split('.')}($a{callArgs});
                     };
-                    case [true, false]: macro {
+                    case [_, true, false]: macro {
                         return $p{item[0].split('.')}($a{callArgs});
                     };
-                    case [false, true]: macro {
+                    case [_, false, true]: macro {
                         $p{['_this', name]}($a{callArgs});
                         _hold.value = _this;
                     };
-                    case [false, false]: macro {
+                    case [_, false, false]: macro {
                         var _res = $p{['_this', name]}($a{callArgs});
                         _hold.value = _this;
                         return _res;
@@ -811,20 +865,20 @@ class DynamicModule {
                     if (readable) {
                         var expr = macro mod.add($v{item[0]}, function() {
                             return $p{item[0].split('.')};
-                        }, $v{item[1]}, 0, $v{isStatic}, $v{type});
+                        }, $v{item[1]}, $v{isStatic}, $v{type}, 0);
                         abstractExprs.push(expr);
                     }
                     if (writable) {
                         var expr = macro mod.add($v{item[0]}, function(value) {
                             return $p{item[0].split('.')} = value;
-                        }, $v{item[1]}, 1, $v{isStatic}, $v{type});
+                        }, $v{item[1]}, $v{isStatic}, $v{type}, 1);
                         abstractExprs.push(expr);
                     }
                 }
                 else {
                     var args = [{
                         name: '_hold',
-                        type: macro :interpret.HoldValue,
+                        type: macro :interpret.DynamicAbstractValue,
                         opt: false,
                         value: null
                     },{

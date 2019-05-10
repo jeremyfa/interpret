@@ -28,6 +28,10 @@ enum RuntimeItem {
 
     ClassItem(rawItem:Dynamic, moduleId:Int, name:String);
 
+    AbstractItem(rawItem:Dynamic, moduleId:Int, name:String, runtimeType:String);
+
+    AbstractFieldItem(rawItem:Dynamic, moduleId:Int, name:String, isStatic:Bool, type:String, ?argTypes:Array<String>);
+
     EnumItem(rawItem:Dynamic, moduleId:Int, name:String);
 
     EnumFieldItem(rawItem:Dynamic, name:String, numArgs:Int);
