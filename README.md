@@ -26,7 +26,7 @@ It is possible to write haxe classes with live-reloadable methods using **interp
 
 On targets supporting haxe's **sys** API, live reload can work without having to run any custom server. The app itself will just watch for changes on the file system.
 
-It is however possible to provide custom watchers as needed for more complexe scenarios. Some ideas: remotely updating a mobile app (ios/android) through websockets, embedding a code editor in the same app that runs it...
+It is however possible to provide custom watchers as needed for more complex scenarios. Some ideas: remotely update a mobile app (ios/android) through websockets, embed a code editor in the same app that runs it...
 
 ### Try to stay as close as possible to Haxe
 
@@ -34,7 +34,32 @@ While **interpret** cannot reproduce 100% of haxe features as script, it is tryi
 
 A typical scenario leveraging this aspect is using **interpret** live-reload while iterating on your app code and testing quickly what it does, then bundling the final binary as compiled, and efficient, haxe code: use scripting in dev, but make no compromise regarding performance in production!
 
+## How to use
+
+### Load an interpretable haxe class
+
+Check out the commented sample code at: [sample/DynamicClassSample.hx](sample/DynamicClassSample.hx)
+
+Run it with: `haxe sample-dynclass.hxml`
+
+### Create class live-reloadable methods
+
+Check out the commented sample code at: [sample/LiveReloadSample.hx](sample/DynamicClassSample.hx)
+
+Run it with: `haxe sample-livereload.hxml`
+
+## What works?
+
 To see what haxe features are supported, you can take a look at the haxe files in [test script directory](/test/script/), which are all tested and compatible with **interpret**.
 
 **interpret** is still at an early stage of development and can be improved a lot. New features, like handling of enums and pattern matching, will be added in the future.
 
+## Roadmap
+
+**interpret** will be improved to become more and more complete, here are the things that will probably be worked on next:
+
+- [ ] Expose enums to interpreted code
+- [ ] Handle switches with pattern matching
+- [ ] Handle arrow functions
+- [ ] Handle abstract operators?
+- [ ] Hunt and fix any edge case?

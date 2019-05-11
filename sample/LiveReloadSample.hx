@@ -31,6 +31,10 @@ class LiveReloadSample {
             env.addModule('StringTools', DynamicModule.fromStatic(StringTools));
         };
 
+        // Optional: provide a custom file watcher
+        // that will be used to watch interpreted files
+        //LiveReload.defaultWatcher = new MyCustomWatcher();
+
         // Start live reload
         LiveReload.start();
 
