@@ -1,5 +1,6 @@
 package interpret.macros;
 
+import haxe.macro.TypeTools;
 import haxe.io.Path;
 import haxe.macro.Printer;
 import haxe.macro.Context;
@@ -78,6 +79,14 @@ class InterpretableMacro {
                             }
                         }
 
+                        var argTypes = [];
+                        for (arg in fn.args) {
+                            var type = Context.resolveType(arg.type, field.pos);
+                            var typeStr = TypeTools.toString(type).replace(' ', '');
+                            if (arg.opt) typeStr = '?' + typeStr;
+                            argTypes.push(typeStr);
+                        }
+
                         // Compute dynamic call args
                         var dynCallArgsArray = [for (arg in fn.args) macro $i{arg.name}];
                         var dynCallArgs = fn.args.length > 0 ? macro $a{dynCallArgsArray} : macro null;
@@ -114,7 +123,7 @@ class InterpretableMacro {
                             case [true, true]: macro if (__interpretClass != null) {
                                 if (!$i{dynCallBrokenName}) {
                                     try {
-                                        __interpretClass.call($v{dynCallName}, $dynCallArgs);
+                                        __interpretClass.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
                                         return;
                                     }
                                     catch (e:Dynamic) {
@@ -126,7 +135,7 @@ class InterpretableMacro {
                             case [true, false]: macro if (__interpretClass != null) {
                                 if (!$i{dynCallBrokenName}) {
                                     try {
-                                        var res = __interpretClass.call($v{dynCallName}, $dynCallArgs);
+                                        var res = __interpretClass.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
                                         return res;
                                     }
                                     catch (e:Dynamic) {
@@ -141,7 +150,7 @@ class InterpretableMacro {
                                         if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
                                             __interpretInstance = __interpretClass.createInstance(null, this);
                                         }
-                                        __interpretInstance.call($v{dynCallName}, $dynCallArgs);
+                                        __interpretInstance.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
                                         return;
                                     }
                                     catch (e:Dynamic) {
@@ -156,7 +165,7 @@ class InterpretableMacro {
                                         if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
                                             __interpretInstance = __interpretClass.createInstance(null, this);
                                         }
-                                        var res = __interpretInstance.call($v{dynCallName}, $dynCallArgs);
+                                        var res = __interpretInstance.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
                                         return res;
                                     }
                                     catch (e:Dynamic) {
@@ -283,6 +292,28 @@ class InterpretableMacro {
         return fields;
 
     } //build
+
+    static function complexTypeToString(type:ComplexType):String {
+
+        var typeStr:String = null;
+
+        if (type != null) {
+            switch (type) {
+                case TPath(p):
+                    typeStr = p.name;
+                    if (p.pack != null && p.pack.length > 0) {
+                        typeStr = p.pack.join('.') + '.' + typeStr;
+                    }
+                default:
+                    typeStr = 'Dynamic';
+            }
+        }
+        else {
+            typeStr = 'Dynamic';
+        }
+
+        return typeStr;
+    }
 
     static function hasInterpretMeta(field:Field):Bool {
 

@@ -209,7 +209,7 @@ class DynamicClass {
 
     } //set
 
-    public function call(name:String, ?args:Array<Dynamic>, unwrap:Bool = true):Dynamic {
+    public function call(name:String, ?args:Array<Dynamic>, unwrap:Bool = true, ?argTypes:Array<String>):Dynamic {
 
         initIfNeeded();
 
@@ -224,6 +224,15 @@ class DynamicClass {
         if (method == null) {
             throw 'Class method not found: $this $name';
         }
+
+        if (args != null && args.length > 0 && argTypes != null) {
+            var _args = [];
+            for (i in 0...args.length) {
+                _args.push(TypeUtils.wrapIfNeeded(args[i], argTypes[i], env));
+            }
+            args = _args;
+        }
+
         var rawRes = Reflect.callMethod(null, method, args != null ? args : NO_ARGS);
         return unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
 

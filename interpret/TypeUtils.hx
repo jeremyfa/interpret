@@ -188,12 +188,29 @@ class TypeUtils {
             return value;
         }
 
+        if (type == null) {
+            // No type specified, there is nothing we can do
+            return value;
+        }
+
+        var cleanType = type;
+        var opt = false;
+        if (cleanType.startsWith('?')) {
+            opt = true;
+            cleanType = cleanType.substring(1);
+        }
+        if (cleanType.startsWith('Null<') && cleanType.endsWith('>')) {
+            opt = true;
+            cleanType = cleanType.substring(5, cleanType.length - 1);
+        }
+
         if (env != null) {
-            var resolved = env.resolveItemByTypePath(type);
+            var resolved = env.resolveItemByTypePath(cleanType);
             if (resolved != null) {
                 switch (resolved) {
                     // Abstract value need to be wrapped to be recognizable by interpret
                     case AbstractItem(rawItem, moduleId, name, runtimeType):
+                        if (opt && value == null) return null;
                         return new DynamicAbstract(env, resolved, value);
                     
                     // These don't need wrapping
@@ -218,7 +235,7 @@ class TypeUtils {
             }
         }
 
-        return value; // TODO
+        return value;
 
     } //wrapIfNeeded
 

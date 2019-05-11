@@ -232,7 +232,7 @@ class DynamicInstance {
 
     } //set
 
-    public function call(name:String, ?args:Array<Dynamic>, unwrap:Bool = true):Dynamic {
+    public function call(name:String, ?args:Array<Dynamic>, unwrap:Bool = true, ?argTypes:Array<String>):Dynamic {
 
         var prevSelf = interpreter._self;
         var prevClassSelf = interpreter._classSelf;
@@ -249,6 +249,14 @@ class DynamicInstance {
 
         if (method == null) {
             throw 'Instance method not found: $this $name';
+        }
+
+        if (args != null && args.length > 0 && argTypes != null) {
+            var _args = [];
+            for (i in 0...args.length) {
+                _args.push(TypeUtils.wrapIfNeeded(args[i], argTypes[i], dynamicClass.env));
+            }
+            args = _args;
         }
 
         var rawRes = Reflect.callMethod(null, method, args != null ? args : NO_ARGS);
