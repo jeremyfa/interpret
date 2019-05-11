@@ -360,6 +360,15 @@ class Env {
 
     } //configureInterpretableEnv
 
+    dynamic static public function catchInterpretableException(e:Dynamic, ?dynClass:DynamicClass, ?dynInstance:DynamicInstance):Void {
+
+        // Override this method if you want to do specifing handling
+        // (like, rethrow some catched exception, do different logging);
+
+        Errors.handleInterpretableError(e);
+
+    } //catchInterpretableException
+
 /// Print
 
     public function toString() {

@@ -32,6 +32,8 @@ class InterpretableMacro {
 
         var extraFields:Array<Field> = null;
 
+        var dynCallBrokenNames:Array<String> = [];
+
         for (field in fields) {
 
             if (hasInterpretMeta(field)) {
@@ -81,6 +83,8 @@ class InterpretableMacro {
                         var dynCallArgs = fn.args.length > 0 ? macro $a{dynCallArgsArray} : macro null;
                         var dynCallName = field.name;
                         var dynCallBrokenName = '__interpretBroken_' + field.name;
+                        
+                        dynCallBrokenNames.push(dynCallBrokenName);
 
                         extraFields.push({
                             pos: currentPos,
@@ -108,61 +112,57 @@ class InterpretableMacro {
                         // Compute (conditional) dynamic call expr
                         var dynCallExpr = switch [isStatic, isVoidRet] {
                             case [true, true]: macro if (__interpretClass != null) {
-                                try {
-                                    __interpretClass.call($v{dynCallName}, $dynCallArgs);
-                                    $i{dynCallBrokenName} = false;
-                                    return;
-                                }
-                                catch (e:Dynamic) {
-                                    if (!$i{dynCallBrokenName}) {
-                                        interpret.Errors.handleInterpretableError(e);
+                                if (!$i{dynCallBrokenName}) {
+                                    try {
+                                        __interpretClass.call($v{dynCallName}, $dynCallArgs);
+                                        return;
                                     }
-                                    $i{dynCallBrokenName} = true;
+                                    catch (e:Dynamic) {
+                                        interpret.Env.catchInterpretableException(e, __interpretClass);
+                                        $i{dynCallBrokenName} = true;
+                                    }
                                 }
                             };
                             case [true, false]: macro if (__interpretClass != null) {
-                                try {
-                                    var res = __interpretClass.call($v{dynCallName}, $dynCallArgs);
-                                    $i{dynCallBrokenName} = false;
-                                    return res;
-                                }
-                                catch (e:Dynamic) {
-                                    if (!$i{dynCallBrokenName}) {
-                                        interpret.Errors.handleInterpretableError(e);
+                                if (!$i{dynCallBrokenName}) {
+                                    try {
+                                        var res = __interpretClass.call($v{dynCallName}, $dynCallArgs);
+                                        return res;
                                     }
-                                    $i{dynCallBrokenName} = true;
+                                    catch (e:Dynamic) {
+                                        interpret.Env.catchInterpretableException(e, __interpretClass);
+                                        $i{dynCallBrokenName} = true;
+                                    }
                                 }
                             };
                             case [false, true]: macro if (__interpretClass != null) {
-                                try {
-                                    if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
-                                        __interpretInstance = __interpretClass.createInstance(null, this);
+                                if (!$i{dynCallBrokenName}) {
+                                    try {
+                                        if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
+                                            __interpretInstance = __interpretClass.createInstance(null, this);
+                                        }
+                                        __interpretInstance.call($v{dynCallName}, $dynCallArgs);
+                                        return;
                                     }
-                                    __interpretInstance.call($v{dynCallName}, $dynCallArgs);
-                                    $i{dynCallBrokenName} = false;
-                                    return;
-                                }
-                                catch (e:Dynamic) {
-                                    if (!$i{dynCallBrokenName}) {
-                                        interpret.Errors.handleInterpretableError(e);
+                                    catch (e:Dynamic) {
+                                        interpret.Env.catchInterpretableException(e, __interpretClass, __interpretInstance);
+                                        $i{dynCallBrokenName} = true;
                                     }
-                                    $i{dynCallBrokenName} = true;
                                 }
                             };
                             case [false, false]: macro if (__interpretClass != null) {
-                                try {
-                                    if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
-                                        __interpretInstance = __interpretClass.createInstance(null, this);
+                                if (!$i{dynCallBrokenName}) {
+                                    try {
+                                        if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
+                                            __interpretInstance = __interpretClass.createInstance(null, this);
+                                        }
+                                        var res = __interpretInstance.call($v{dynCallName}, $dynCallArgs);
+                                        return res;
                                     }
-                                    var res = __interpretInstance.call($v{dynCallName}, $dynCallArgs);
-                                    $i{dynCallBrokenName} = false;
-                                    return res;
-                                }
-                                catch (e:Dynamic) {
-                                    if (!$i{dynCallBrokenName}) {
-                                        interpret.Errors.handleInterpretableError(e);
+                                    catch (e:Dynamic) {
+                                        interpret.Env.catchInterpretableException(e, __interpretClass, __interpretInstance);
+                                        $i{dynCallBrokenName} = true;
                                     }
-                                    $i{dynCallBrokenName} = true;
                                 }
                             };
                         }
@@ -182,6 +182,33 @@ class InterpretableMacro {
         }
 
         if (hasFieldsWithInterpretMeta) {
+
+            // Add reset state
+            //
+            var resetBrokenCalls = [];
+            for (dynCallBrokenName in dynCallBrokenNames) {
+                resetBrokenCalls.push(macro $i{dynCallBrokenName} = false);
+            }
+
+            fields.push({
+                pos: currentPos,
+                name: '__interpretResetState',
+                kind: FFun({
+                    args: [],
+                    ret: macro :Void,
+                    expr: {
+                        expr: EBlock(resetBrokenCalls),
+                        pos: currentPos
+                    }
+                }),
+                access: [APrivate, AStatic],
+                doc: '',
+                meta: [{
+                    name: ':noCompletion',
+                    params: [],
+                    pos: currentPos
+                }]
+            });
 
             // Add dynamic class field
             fields.push({
@@ -230,6 +257,7 @@ class InterpretableMacro {
                             interpret.Errors.handleInterpretableError(e);
                             __interpretClass = null;
                         }
+                        __interpretResetState();
                     })
                 ),
                 access: [APrivate, AStatic],
