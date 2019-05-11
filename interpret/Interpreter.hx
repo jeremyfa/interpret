@@ -248,6 +248,8 @@ class Interpreter extends hscript.Interp {
 	override function assign(e1:Expr, e2:Expr):Dynamic {
 
 		var v = expr(e2);
+
+        //trace('ASSIGN $e1 $e2 $v');
         
 		switch( hscript.Tools.expr(e1) ) {
 		case EIdent(id):
@@ -530,12 +532,28 @@ class Interpreter extends hscript.Interp {
             var result = dynMod.items.get(dynMod.typePath + '.' + f);
             return unwrap(result);
         }
-        //trace('SUPER GET $o / $f');
-        return super.get(o, f);
+
+        var clazz = Type.getClass(o);
+        var type = clazz != null ? Type.getClassName(clazz) : null;
+        var fieldTypePath = type + '.' + f;
+        var item = env.resolveItemByTypePath(fieldTypePath);
+        var res = super.get(o, f);
+        if (item != null) {
+            switch (item) {
+                case AbstractFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                    res = TypeUtils.wrapIfNeeded(res, type, env);
+                case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                    res = TypeUtils.wrapIfNeeded(res, type, env);
+                default:
+            }
+        }
+        return res;
 
     } //get
 
     override function set(o:Dynamic, f:String, v:Dynamic):Dynamic {
+
+        //trace('SET $o / $f / $v');
 
         var self:Map<String,Dynamic> = _self != null ? _self : locals.get(selfName).r;
         if (o == self) {
@@ -743,7 +761,7 @@ class Interpreter extends hscript.Interp {
     override function cnew(cl:String, args:Array<Dynamic>):Dynamic {
 
         // Resolve instanciable
-        var instanciable = resolveInstanciable(cl);
+        var instanciable:Dynamic = resolveInstanciable(cl);
 
         // Abstract?
         if (Std.is(instanciable, RuntimeItem)) {
@@ -771,7 +789,7 @@ class Interpreter extends hscript.Interp {
             return Type.createInstance(instanciable, args);
         }
 
-        trace('cnew $instanciable $cl $args');
+        //trace('cnew $instanciable $cl $args');
         return super.cnew(cl, args);
 
     } //cnew

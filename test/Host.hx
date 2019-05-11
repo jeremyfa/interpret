@@ -38,6 +38,10 @@ class Host {
         env.addModule('Sys', DynamicModule.fromStatic(Sys));
         #end
 
+        #if host_wrap_tests
+        env.addModule('test.native.Quad', DynamicModule.fromStatic(test.native.Quad));
+        #end
+
         #if host_abstract_tests
         env.addModule('test.native.Color', DynamicModule.fromStatic(test.native.Color));
         #end
@@ -505,6 +509,11 @@ class Host {
         #if host_test_74
         var dynClass = env.modules.get('test.script.WrapTests').dynamicClasses.get('WrapTests');
         Sys.println('' + dynClass.call('test1'));
+        #end
+
+        #if host_test_82
+        var dynClass = env.modules.get('test.script.WrapTests').dynamicClasses.get('WrapTests');
+        Sys.println('' + dynClass.call('test2'));
         #end
 
         #if host_test_75

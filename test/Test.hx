@@ -366,6 +366,10 @@ class Test extends buddy.SingleSuite {
                 run('wrap_tests test_74').should.be('test1');
             });
 
+            it("new WrapTests().test2() -> 'isInt=1 / #80FFFF'", {
+                run('wrap_tests abstract_tests test_82').should.be('isInt=1 / #80FFFF');
+            });
+
         });
         
         describe("Abstracts", {

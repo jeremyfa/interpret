@@ -11,4 +11,16 @@ class WrapTests {
 
     } //test1
 
+    public static function test2() {
+
+        var quad = new test.native.Quad();
+
+        var color = quad.color;
+        color.red = 128;
+        quad.color = color;
+
+        return quad.colorInfo();
+
+    } //test2
+
 } //WrapTests

@@ -61,8 +61,6 @@ class LiveReload {
 
     public function new(path:String, onUpdate:String->Void) {
 
-        trace('NEW LiveReload $path $onUpdate');
-
         this.path = path;
         this.onUpdate = onUpdate;
 

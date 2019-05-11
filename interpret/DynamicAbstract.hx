@@ -86,7 +86,7 @@ class DynamicAbstract {
 
 /// Static helpers
 
-    public static function getStatic(abstractItem:RuntimeItem, env:Env, dynAbstract:DynamicAbstract, varName:String, unwrap:Bool = true) {
+    public static function getStatic(abstractItem:RuntimeItem, env:Env, dynAbstract:DynamicAbstract, varName:String, unwrap:Bool = true):Dynamic {
 
         var result:Dynamic = null;
 
@@ -118,7 +118,7 @@ class DynamicAbstract {
 
     } //getStatic
 
-    public static function setStatic(abstractItem:RuntimeItem, env:Env, dynAbstract:DynamicAbstract, varName:String, value:Dynamic, unwrap:Bool = true) {
+    public static function setStatic(abstractItem:RuntimeItem, env:Env, dynAbstract:DynamicAbstract, varName:String, value:Dynamic, unwrap:Bool = true):Dynamic {
 
         var result:Dynamic = null;
 
