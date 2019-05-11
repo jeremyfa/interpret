@@ -1,0 +1,14 @@
+{
+    "name": "interpret",
+    "url" : "https://github.com/jeremyfa/interpret/",
+    "license": "MIT",
+    "tags": ["cross", "hscript", "interpreter", "live", "reload", "livereload"],
+    "description": "Turn haxe classes into scriptable/interpretable/hot-reloadable code using hscript",
+    "version": "0.1.0",
+    "classPath": ".",
+    "releasenote": "Initial release, consider it very alpha-ish at this stage!",
+    "contributors": ["jeremyfa"],
+    "dependencies": {
+      "hscript": "2.3.0"
+    }
+  }
