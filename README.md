@@ -8,7 +8,7 @@ Turn haxe classes into scriptable/interpretable/hot-reloadable code using hscrip
 
 ### Execute standard haxe code as script
 
-In contrary of regular hscript, **interpret** takes as input a standard Haxe class. This means you can work on your code with the same IDE, code completino, static analysis tools as you would do for compiled haxe code.
+In contrary of regular hscript, **interpret** takes as input a standard Haxe class. This means you can work on your code with the same IDE, code completion, static analysis tools as you would do for compiled haxe code.
 
 ### No need to use haxe compiler to consume scripts
 
