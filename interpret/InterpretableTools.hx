@@ -9,10 +9,11 @@ class InterpretableTools {
         // Create env
         var env = new Env();
         env.addDefaultModules();
+        env.addModule('interpret.Interpretable', DynamicModule.fromStatic(interpret.Interpretable));
 
         var extendingClassName = className + '_interpretable';
         var extendingClassPath = extendingClassName;
-        if (classPack.length > 0) extendingClassPath = classPack.join('.') + extendingClassPath;
+        if (classPack.length > 0) extendingClassPath = classPack.join('.') + '.' + extendingClassPath;
 
         Env.configureInterpretableEnv(env);
 

@@ -91,8 +91,6 @@ class Interpreter extends hscript.Interp {
 
     override function resolve(id:String):Dynamic {
 
-        //trace('RESOLVE $id');
-
         var l = locals.get(id);
         if (l != null) {
             return l.r;
@@ -346,7 +344,6 @@ class Interpreter extends hscript.Interp {
             }
             else if (variables.exists(f)) {
                 var result = variables.get(f);
-                //trace('-> $result');
                 if (Reflect.isFunction(result)) {
                     // TODO cache?
                     if (classInterpreter != null) {
@@ -401,7 +398,26 @@ class Interpreter extends hscript.Interp {
                         return result;
                     }
                 } else {
+
+                    var clazz = Type.getClass(superInstance);
+                    var type = clazz != null ? Type.getClassName(clazz) : null;
+                    var fieldTypePath = type + '.' + f;
+                    var item = env.resolveItemByTypePath(fieldTypePath);
                     var result = super.get(superInstance, f);
+                    if (item != null && result != null) {
+                        switch (item) {
+                            case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                                if (argTypes != null) {
+                                    // This is a method, bind instance
+                                    var prevResult = result;
+                                    result = Reflect.makeVarArgs(function(args) {
+                                        return Reflect.callMethod(superInstance, prevResult, args);
+                                    });
+                                }
+                            default:
+                        }
+                    }
+
                     if (result != null || Reflect.hasField(superInstance, f) || Reflect.hasField(superInstance, 'get_' + f)) {
                         return result;
                     }
@@ -651,6 +667,8 @@ class Interpreter extends hscript.Interp {
     } //set
 
     override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic {
+
+        //trace('CALL $o $f $args');
 
         if (Std.is(f, RuntimeItem)) {
             switch (f) {

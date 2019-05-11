@@ -29,7 +29,7 @@ class Env {
     var superClasses:Map<String,String> = new Map();
 
     /** Internal map of classes and the interfaces they implement (if any) */
-    var interfaces:Map<String,Map<String,Bool>> = new Map();
+    var interfaces:Map<String,EnvInterfaces> = new Map();
 
     /** Resolved dynamic classes */
     var resolvedDynamicClasses:Map<String,DynamicClass> = new Map();
@@ -123,10 +123,12 @@ class Env {
     public function getInterfaces(classPath:String):Map<String,Bool> {
 
         var subItems = interfaces.get(classPath);
-        if (subItems != null) return subItems;
+        if (subItems != null) return subItems.mapping;
         var alias = aliases.get(classPath);
         if (alias == null) return null;
-        return interfaces.get(alias);
+        var res = interfaces.get(alias);
+        if (res != null) return res.mapping;
+        return null;
 
     } //getInterfaces
 
@@ -338,14 +340,16 @@ class Env {
                 var envSubItems = interfaces.get(key);
                 if (envSubItems == null) {
                     var aliasKey = aliases.get(key);
-                    envSubItems = interfaces.get(aliasKey);
+                    if (aliasKey != null) {
+                        envSubItems = interfaces.get(aliasKey);
+                    }
                     if (envSubItems == null) {
-                        envSubItems = new Map();
+                        envSubItems = new EnvInterfaces();
                         interfaces.set(key, envSubItems);
                     }
                 }
                 for (subKey in subItems.keys()) {
-                    envSubItems.set(subKey, true);
+                    envSubItems.mapping.set(subKey, true);
                 }
             }
         }
@@ -378,3 +382,13 @@ class Env {
     } //toString
 
 } //Env
+
+class EnvInterfaces {
+
+    public var mapping:Map<String,Bool> = new Map();
+
+    public function new() {
+
+    } //new
+
+} //EnvInterfaces

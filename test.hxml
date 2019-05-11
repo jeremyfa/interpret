@@ -1,4 +1,4 @@
--lib hscript
+-lib hscript:2.3.0
 -lib buddy
 -D buddy-colors
 -main test.Test

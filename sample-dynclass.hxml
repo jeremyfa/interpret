@@ -1,0 +1,5 @@
+-lib hscript:2.3.0
+-main sample.DynamicClassSample
+-cp .
+-debug
+--interp

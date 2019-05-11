@@ -589,7 +589,7 @@ class DynamicModule {
                                             } else {
                                                 toAdd.push([
                                                     subTypePath + '.' + field.name,
-                                                    ModuleItemKind.CLASS_VAR,
+                                                    ModuleItemKind.CLASS_FUNC,
                                                     isStatic,
                                                     retType,
                                                     argTypes,

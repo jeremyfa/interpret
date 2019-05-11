@@ -1,6 +1,6 @@
 package interpret;
 
-#if sys
+#if (sys || hxnodejs || nodejs || node)
 import sys.io.File;
 import sys.FileSystem;
 #end
@@ -28,7 +28,7 @@ class StandardWatcher implements Watcher {
 
     public function watch(path:String, onUpdate:String->Void):Void->Void {
 
-        #if !sys
+        #if (!sys && !hxnodejs && !nodejs && !node)
         trace('[warning] Cannot watch file at path $path with StandardWatcher on this target');
         return function() {};
         #end
@@ -72,7 +72,7 @@ class StandardWatcher implements Watcher {
         if (timeSinceLastCheck < UPDATE_INTERVAL) return;
         timeSinceLastCheck = 0.0;
 
-        #if sys
+        #if (sys || hxnodejs || nodejs || node)
         for (path in watched.keys()) {
             if (FileSystem.exists(path) && !FileSystem.isDirectory(path)) {
                 var stat = FileSystem.stat(path);
