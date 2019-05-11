@@ -44,7 +44,7 @@ Run it with: `haxe sample-dynclass.hxml`
 
 ### Create class live-reloadable methods
 
-Check out the commented sample code at: [sample/LiveReloadSample.hx](sample/LiveReloadSample.hx)
+Check out the commented sample code at: [sample/LiveReloadSample.hx](sample/LiveReloadSample.hx) and the [interpretable class example](sample/interpretable/WatchedClass.hx) it is using.
 
 Run it with: `haxe sample-livereload.hxml`
 
