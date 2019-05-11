@@ -8,12 +8,6 @@ class WatchedClass implements Interpretable {
 
     } //new
 
-    public static function getClassNameFromNativeStatic(stuff:String):String {
-
-        return Type.getClassName(WatchedClass);
-
-    } //getClassNameFromNativeStatic
-
     /** This is a native (non-interpreted) method. Modifying it when the app is running
         will have no effect on the running code. */
     public function getClassNameFromNative():String {
