@@ -7,11 +7,11 @@ class LiveReload {
 
     public static var defaultWatcher:Watcher = null;
 
+    public static var tickCallbacks(default,null):Array<Float->Void> = [];
+
     static var started:Bool = false;
 
     static var onceStart:Array<?Watcher->Void> = [];
-
-    static var tickCallbacks:Array<Float->Void> = [];
 
     static var _tickCallbacks:Array<Float->Void> = [];
 

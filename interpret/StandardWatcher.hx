@@ -5,8 +5,6 @@ import sys.io.File;
 import sys.FileSystem;
 #end
 
-import haxe.Timer;
-
 /** Standard watcher implementation based on haxe's Sys API.
     A watcher is reused and can watch multiple paths at the same time. */
 @:allow(interpret.LiveReload)
