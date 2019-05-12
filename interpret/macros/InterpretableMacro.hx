@@ -196,7 +196,7 @@ class InterpretableMacro {
             name: 'interpretWillReloadClass',
             kind: FVar(macro :interpret.DynamicClass->Void, macro null),
             access: [AStatic],
-            doc: 'If provided, will be called right before this interpretable class is reloaded. If any, provide the dynamic class previously used as argument, before it is replaced by a new one.',
+            doc: 'If provided, will be called right before this interpretable class is reloaded. If any, provides the dynamic class previously used as argument, before it is replaced by a new one.',
             meta: []
         });
 
@@ -205,7 +205,7 @@ class InterpretableMacro {
             name: 'interpretDidReloadClass',
             kind: FVar(macro :interpret.DynamicClass->Void, macro null),
             access: [AStatic],
-            doc: 'If provided, will be called right after this interpretable class is reloaded.',
+            doc: 'If provided, will be called right after this interpretable class is reloaded. Provides the new dynamic class that has just been loaded as argument.',
             meta: []
         });
 
