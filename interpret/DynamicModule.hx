@@ -177,7 +177,7 @@ class DynamicModule {
                             };
                             data.name = extendingClassName;
                             data.interfaces = [{
-                                name: 'Interpretable',
+                                name: 'interpret.Interpretable',
                                 kind: INTERFACE
                             }];
                             return TType(data);
@@ -231,6 +231,11 @@ class DynamicModule {
                                 // implement interpret.Interpretable interface
                                 if (data.interfaces != null) {
                                     for (item in data.interfaces) {
+                                        if (item.name == 'interpret.Interpretable') {
+                                            // We are taking shortcuts here
+                                            classAllowed = true;
+                                            break;
+                                        }
                                         var resolvedType = TypeUtils.toResolvedType(module.imports, item.name);
                                         if (resolvedType == 'Interpretable' || resolvedType == 'interpret.Interpretable') {
                                             classAllowed = true;
