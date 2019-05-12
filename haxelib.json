@@ -4,8 +4,8 @@
     "license": "MIT",
     "tags": ["cross", "hscript", "interpreter", "live", "reload", "livereload"],
     "description": "Turn haxe classes into scriptable/interpretable/hot-reloadable code using hscript",
-    "version": "0.1.0",
-    "releasenote": "Initial release, consider it very alpha-ish at this stage!",
+    "version": "0.1.1",
+    "releasenote": "Added a few hooks and fixes, consider it very alpha-ish at this stage!",
     "contributors": ["jeremyfa"],
     "dependencies": {
       "hscript": "2.3.0"
