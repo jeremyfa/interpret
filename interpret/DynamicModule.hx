@@ -34,6 +34,7 @@ class DynamicModule {
                 cb(this);
             }
         }
+        if (this.items == null) this.items = new Map();
         return this.items;
     }
 
