@@ -14,11 +14,11 @@ class InterpretableMacro {
 
         var fields = Context.getBuildFields();
 
+        var currentPos = Context.currentPos();
+
 #if (!display && !completion)
 
         var hasFieldsWithInterpretMeta = false;
-
-        var currentPos = Context.currentPos();
 
         var localClass = Context.getLocalClass().get();
 
@@ -189,6 +189,27 @@ class InterpretableMacro {
             }
 
         }
+#end
+
+        fields.push({
+            pos: currentPos,
+            name: 'interpretWillReloadClass',
+            kind: FVar(macro :interpret.DynamicClass->Void, macro null),
+            access: [AStatic],
+            doc: 'If provided, will be called right before this interpretable class is reloaded. If any, provide the dynamic class previously used as argument, before it is replaced by a new one.',
+            meta: []
+        });
+
+        fields.push({
+            pos: currentPos,
+            name: 'interpretDidReloadClass',
+            kind: FVar(macro :interpret.DynamicClass->Void, macro null),
+            access: [AStatic],
+            doc: 'If provided, will be called right after this interpretable class is reloaded.',
+            meta: []
+        });
+
+#if (!display && !completion)
 
         if (hasFieldsWithInterpretMeta) {
 
@@ -260,7 +281,13 @@ class InterpretableMacro {
                     macro new interpret.LiveReload($v{filePath}, function(content:String) {
                         trace('File changed at path ' + $v{filePath});
                         try {
+                            if (interpretWillReloadClass != null) {
+                                interpretWillReloadClass(__interpretClass);
+                            }
                             __interpretClass = interpret.InterpretableTools.createInterpretClass($v{classPack}, $v{className}, content);
+                            if (__interpretClass != null && interpretDidReloadClass != null) {
+                                interpretDidReloadClass(__interpretClass);
+                            }
                         }
                         catch (e:Dynamic) {
                             interpret.Errors.handleInterpretableError(e);
