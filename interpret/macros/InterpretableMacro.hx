@@ -285,6 +285,9 @@ class InterpretableMacro {
                                 interpretWillReloadClass(__interpretClass);
                             }
                             __interpretClass = interpret.InterpretableTools.createInterpretClass($v{classPack}, $v{className}, content);
+                            if (__interpretClass == null) {
+                                trace('[warning] Failed to reload interpretable class from file at path: ' + $v{filePath});
+                            }
                             if (__interpretClass != null && interpretDidReloadClass != null) {
                                 interpretDidReloadClass(__interpretClass);
                             }
