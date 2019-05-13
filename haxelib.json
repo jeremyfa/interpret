@@ -4,8 +4,8 @@
     "license": "MIT",
     "tags": ["cross", "hscript", "interpreter", "live", "reload", "livereload"],
     "description": "Turn haxe classes into scriptable/interpretable/hot-reloadable code using hscript",
-    "version": "0.1.1",
-    "releasenote": "Added a few hooks and fixes, consider it very alpha-ish at this stage!",
+    "version": "0.1.2",
+    "releasenote": "Allow @interpret meta on a whole class ; Keep using native code of unchanged methods at reload ; Accept adding new vars on the fly if whole class is marked @interpret",
     "contributors": ["jeremyfa"],
     "dependencies": {
       "hscript": "2.3.0"
