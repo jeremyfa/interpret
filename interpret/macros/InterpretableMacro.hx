@@ -23,6 +23,7 @@ class InterpretableMacro {
         var hasFieldsWithInterpretMeta = false;
 
         var localClass = Context.getLocalClass().get();
+        var classHasInterpretMeta = hasInterpretMeta(localClass.meta.get());
 
         var filePath = Context.getPosInfos(localClass.pos).file;
         if (!Path.isAbsolute(filePath)) {
@@ -39,14 +40,14 @@ class InterpretableMacro {
 
         for (field in fields) {
 
-            if (hasInterpretMeta(field)) {
+            if (classHasInterpretMeta || hasInterpretMeta(field.meta)) {
 
                 switch (field.kind) {
                     case FFun(fn):
                         hasFieldsWithInterpretMeta = true;
                         if (extraFields == null) extraFields = [];
 
-                        if (field.name == 'new') {
+                        if (field.name == 'new' && (!classHasInterpretMeta || hasInterpretMeta(field.meta))) {
                             throw "@interpret is not allowed on constructor";
                         }
 
@@ -194,7 +195,9 @@ class InterpretableMacro {
                         }
 
                     default:
-                        throw "@interpret meta only works on functions";
+                        if (!classHasInterpretMeta || hasInterpretMeta(field.meta)) {
+                            throw "@interpret meta only works on functions";
+                        }
                 }
             }
 
@@ -376,11 +379,11 @@ class InterpretableMacro {
         return typeStr;
     }
 
-    static function hasInterpretMeta(field:Field):Bool {
+    static function hasInterpretMeta(metas:Null<Metadata>):Bool {
 
-        if (field.meta == null || field.meta.length == 0) return false;
+        if (metas == null || metas.length == 0) return false;
 
-        for (meta in field.meta) {
+        for (meta in metas) {
             if (meta.name == 'interpret') {
                 return true;
             }

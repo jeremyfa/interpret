@@ -234,10 +234,13 @@ class DynamicModule {
 
             var currentClassPath:String = null;
             var currentClassName:String = null;
+            var currentFieldName:String = null;
             var currentClassSkipFields:Map<String,Bool> = null;
             var dynClass:DynamicClass = null;
             var modifiers = new Map<String,Bool>();
+            var interpretableMeta = false;
             var interpretableField = false;
+            var interpretableType = false;
             var packagePrefix:String = '';
 
             for (token in converter.tokens) {
@@ -260,6 +263,8 @@ class DynamicModule {
                         modifiers.set(data.name, true);
 
                     case TType(data):
+                        interpretableType = interpretableMeta;
+                        interpretableMeta = false;
                         if (data.kind == CLASS) {
                             var classAllowed = false;
                             currentClassName = data.name;
@@ -325,7 +330,10 @@ class DynamicModule {
                     case TField(data):
                         // If only keeping interpretable fields, skip any that doesn't
                         // have @interpret meta
-                        if (currentClassPath != null && (!interpretableOnly || interpretableField)) {
+                        interpretableField = interpretableMeta;
+                        interpretableMeta = false;
+                        if (currentClassPath != null && (!interpretableOnly || ((interpretableField || interpretableType) && data.name != 'new'))) {
+                            currentFieldName = data.name;
                             var isStatic = modifiers.exists('static');
                             
                             // When filtering with interpretableOnly, skip vars as it only works
@@ -370,10 +378,11 @@ class DynamicModule {
                         }
                         // Reset @interpret meta
                         interpretableField = false;
+                        interpretableMeta = false;
                     
                     case TMeta(data):
                         if (data.name == 'interpret') {
-                            interpretableField = true;
+                            interpretableMeta = true;
                         }
 
                     default:                

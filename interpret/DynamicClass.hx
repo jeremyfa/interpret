@@ -271,6 +271,9 @@ class DynamicClass {
         var interpretableOnly = options.moduleOptions != null ? options.moduleOptions.interpretableOnly : false;
         var allowUnresolvedImports = options.moduleOptions != null ? options.moduleOptions.allowUnresolvedImports : false;
         var interpretableField = false;
+        var interpretableType = false;
+        var interpretableTargetType = false;
+        var interpretableMeta = false;
         classGetters = new Map();
         classSetters = new Map();
         classMethods = new Map();
@@ -300,13 +303,35 @@ class DynamicClass {
         // Extract target class token (their could be other types/classes in the same content)
         // Extract imports (shared by all classes in file)
         // Extract package
+        interpretableMeta = false;
+        interpretableType = false;
+        interpretableField = false;
         for (token in tokens) {
+
+            switch (token) {
+                case TMeta(data):
+                    if (data.name == 'interpret') {
+                        interpretableMeta = true;
+                    }
+
+                case TType(data):
+                    interpretableType = interpretableMeta;
+                    interpretableMeta = false;
+
+                case TField(data):
+                    interpretableField = interpretableMeta;
+                    interpretableMeta = false;
+
+                default:
+            }
+
             if (!inTargetClass) {
                 switch (token) {
 
                     case TType(data):
                         if (data.kind == CLASS && (targetClass == null || data.name == targetClass)) {
                             inTargetClass = true;
+                            interpretableTargetType = interpretableType;
                             className = data.name;
                             classTokens.push(token);
                         }
@@ -374,7 +399,6 @@ class DynamicClass {
                     }
                     // Reset modifiers and meta
                     modifiers = new Map<String,Bool>();
-                    interpretableField = false;
 
                 default:
             }
@@ -419,6 +443,7 @@ class DynamicClass {
         // Methods & Imports
         modifiers = new Map<String,Bool>();
         interpretableField = false;
+        interpretableMeta = false;
         for (token in classTokens) {
             switch (token) {
 
@@ -427,11 +452,17 @@ class DynamicClass {
                 
                 case TMeta(data):
                     if (data.name == 'interpret') {
-                        interpretableField = true;
+                        interpretableMeta = true;
                     }
 
+                case TType(data):
+                    interpretableType = interpretableMeta;
+                    interpretableMeta = false;
+
                 case TField(data):
-                    if (data.kind == METHOD && (!interpretableOnly || interpretableField) && (skipFields == null || !skipFields.exists(data.name))) {
+                    interpretableField = interpretableMeta;
+                    interpretableMeta = false;
+                    if (data.kind == METHOD && (!interpretableOnly || ((interpretableField || interpretableTargetType) && data.name != 'new')) && (skipFields == null || !skipFields.exists(data.name))) {
                         var isStatic = modifiers.exists('static');
                         var result = isStatic ? classResult : instanceResult;
                         if (isStatic) {
@@ -481,6 +512,7 @@ class DynamicClass {
                         result.add('\n');
 
                     }
+
                     // Reset modifiers and meta
                     modifiers = new Map<String,Bool>();
                     interpretableField = false;
