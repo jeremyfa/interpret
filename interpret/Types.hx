@@ -123,6 +123,27 @@ class TField {
 
     @:optional public var expr:String = null;
 
+    public function isEqualToField(field:TField) {
+
+        if (field == null) return false;
+        if (field.name != name) return false;
+        if (field.expr != expr) return false;
+        if (field.kind != kind) return false;
+        if (field.get != get) return false;
+        if (field.set != set) return false;
+        if (field.type != type) return false;
+        if (field.args == null && args != null) return false;
+        if (field.args != null && args == null) return false;
+        if (field.args != null && args != null) {
+            if (field.args.length != args.length) return false;
+            for (i in 0...field.args.length) {
+                if (!field.args[i].isEqualToArg(args[i])) return false;
+            }
+        }
+        return true;
+
+    } //isEqualToField
+
 } //TField
 
 enum TFieldKind {
@@ -145,6 +166,17 @@ class TArg {
     @:optional public var opt:Bool = false;
 
     @:optional public var expr:String;
+
+    public function isEqualToArg(arg:TArg) {
+
+        if (arg == null) return false;
+        if (arg.name != name) return false;
+        if (arg.expr != expr) return false;
+        if (arg.opt != opt) return false;
+        if (arg.type != type) return false;
+        return true;
+
+    } //isEqualToArg
 
 } //TArg
 

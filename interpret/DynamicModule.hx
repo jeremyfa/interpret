@@ -155,11 +155,14 @@ class DynamicModule {
         var converter = new ConvertHaxe(haxe);
 
         var interpretableOnly = false;
+        var interpretableOriginalContent = null;
         var allowUnresolvedImports = false;
         var extendingClassName = null;
         var extendedClassName = null;
+
         if (options != null) {
             interpretableOnly = options.interpretableOnly;
+            interpretableOriginalContent = options.interpretableOriginalContent;
             allowUnresolvedImports = options.allowUnresolvedImports;
             extendingClassName = options.extendingClassName;
             extendedClassName = options.extendedClassName;
@@ -190,6 +193,37 @@ class DynamicModule {
 
         converter.convert();
 
+        // Skip methods that aren't different from original content, if provided
+        var originalFields:Map<String,TField> = null;
+        if (interpretableOriginalContent != null) {
+
+            var originalContentConverter = new ConvertHaxe(interpretableOriginalContent);
+            originalContentConverter.convert();
+
+            originalFields = new Map();
+            var currentClassName:String = null;
+            for (token in originalContentConverter.tokens) {
+                switch (token) {
+
+                    case TType(data):
+                        if (data.kind == CLASS) {
+                            currentClassName = data.name;
+                            if (interpretableOnly) currentClassName += '_interpretable';
+                        }
+                        else {
+                            currentClassName = null;
+                        }
+                    
+                    case TField(data):
+                        if (currentClassName != null) {
+                            originalFields.set(currentClassName + '.' + data.name, data);
+                        }
+
+                    default:
+                }
+            }
+        }
+
         var module = new DynamicModule();
         module.dynamicClasses = new Map();
 
@@ -199,6 +233,8 @@ class DynamicModule {
         function consumeTokens(shallow:Bool) {
 
             var currentClassPath:String = null;
+            var currentClassName:String = null;
+            var currentClassSkipFields:Map<String,Bool> = null;
             var dynClass:DynamicClass = null;
             var modifiers = new Map<String,Bool>();
             var interpretableField = false;
@@ -226,6 +262,7 @@ class DynamicModule {
                     case TType(data):
                         if (data.kind == CLASS) {
                             var classAllowed = false;
+                            currentClassName = data.name;
                             if (interpretableOnly) {
                                 // If only keeping interpretable classes, skip any that doesn't
                                 // implement interpret.Interpretable interface
@@ -248,10 +285,12 @@ class DynamicModule {
                                 classAllowed = true;
                             }
                             if (classAllowed) {
+                                currentClassSkipFields = originalFields != null ? new Map() : null;
                                 dynClass = shallow ? null : new DynamicClass(env, {
                                     tokens: converter.tokens,
                                     targetClass: data.name,
-                                    moduleOptions: options
+                                    moduleOptions: options,
+                                    skipFields: currentClassSkipFields
                                 });
                                 if (!shallow) module.dynamicClasses.set(data.name, dynClass);
                                 currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
@@ -268,11 +307,15 @@ class DynamicModule {
                                 }
                             }
                             else {
-                                dynClass = null;
+                                currentClassSkipFields = null;
+                                currentClassName = null;
                                 currentClassPath = null;
+                                dynClass = null;
                             }
                         }
                         else {
+                            currentClassSkipFields = null;
+                            currentClassName = null;
                             currentClassPath = null;
                             dynClass = null;
                         }
@@ -291,21 +334,38 @@ class DynamicModule {
                                 module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_VAR, isStatic, data.type);
                             }
                             else if (data.kind == METHOD) {
-                                var extendedType = null;
-                                var argTypes = [];
-                                if (data.args.length > 0) {
-                                    for (arg in data.args) {
-                                        argTypes.push(arg.type);
-                                    }
-                                    var firstArg = data.args[0];
-                                    if (firstArg.type != null) {
-                                        extendedType = firstArg.type;
+
+                                var shouldSkip = false;
+                                if (interpretableOnly) {
+                                    var key = currentClassName + '.' + data.name;
+                                    if (originalFields != null && originalFields.exists(key)) {
+                                        var original = originalFields.get(key);
+                                        if (original.isEqualToField(data)) {
+                                            shouldSkip = true;
+                                            if (currentClassSkipFields != null) {
+                                                currentClassSkipFields.set(data.name, true);
+                                            }
+                                        }
                                     }
                                 }
-                                if (extendedType != null) {
-                                    extendedType = TypeUtils.toResolvedType(module.imports, extendedType);
+
+                                if (!shouldSkip) {
+                                    var extendedType = null;
+                                    var argTypes = [];
+                                    if (data.args.length > 0) {
+                                        for (arg in data.args) {
+                                            argTypes.push(arg.type);
+                                        }
+                                        var firstArg = data.args[0];
+                                        if (firstArg.type != null) {
+                                            extendedType = firstArg.type;
+                                        }
+                                    }
+                                    if (extendedType != null) {
+                                        extendedType = TypeUtils.toResolvedType(module.imports, extendedType);
+                                    }
+                                    module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_FUNC, isStatic, data.type, argTypes, extendedType);
                                 }
-                                module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_FUNC, isStatic, data.type, argTypes, extendedType);
                             }
                         }
                         // Reset @interpret meta

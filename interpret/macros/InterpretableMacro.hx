@@ -1,5 +1,7 @@
 package interpret.macros;
 
+import sys.io.File;
+import sys.FileSystem;
 import haxe.macro.TypeTools;
 import haxe.io.Path;
 import haxe.macro.Printer;
@@ -122,55 +124,63 @@ class InterpretableMacro {
                         var dynCallExpr = switch [isStatic, isVoidRet] {
                             case [true, true]: macro if (__interpretClass != null) {
                                 if (!$i{dynCallBrokenName}) {
-                                    try {
-                                        __interpretClass.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
-                                        return;
-                                    }
-                                    catch (e:Dynamic) {
-                                        interpret.Env.catchInterpretableException(e, __interpretClass);
-                                        $i{dynCallBrokenName} = true;
+                                    if (__interpretClass.skipFields == null || !__interpretClass.skipFields.exists($v{dynCallName})) {
+                                        try {
+                                            __interpretClass.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
+                                            return;
+                                        }
+                                        catch (e:Dynamic) {
+                                            interpret.Env.catchInterpretableException(e, __interpretClass);
+                                            $i{dynCallBrokenName} = true;
+                                        }
                                     }
                                 }
                             };
                             case [true, false]: macro if (__interpretClass != null) {
                                 if (!$i{dynCallBrokenName}) {
-                                    try {
-                                        var res = __interpretClass.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
-                                        return res;
-                                    }
-                                    catch (e:Dynamic) {
-                                        interpret.Env.catchInterpretableException(e, __interpretClass);
-                                        $i{dynCallBrokenName} = true;
+                                    if (__interpretClass.skipFields == null || !__interpretClass.skipFields.exists($v{dynCallName})) {
+                                        try {
+                                            var res = __interpretClass.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
+                                            return res;
+                                        }
+                                        catch (e:Dynamic) {
+                                            interpret.Env.catchInterpretableException(e, __interpretClass);
+                                            $i{dynCallBrokenName} = true;
+                                        }
                                     }
                                 }
                             };
                             case [false, true]: macro if (__interpretClass != null) {
                                 if (!$i{dynCallBrokenName}) {
-                                    try {
-                                        if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
-                                            __interpretInstance = __interpretClass.createInstance(null, this);
+                                    if (__interpretClass.skipFields == null || !__interpretClass.skipFields.exists($v{dynCallName})) {
+                                        try {
+                                            if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
+                                                __interpretInstance = __interpretClass.createInstance(null, this);
+                                            }
+                                            __interpretInstance.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
+                                            return;
                                         }
-                                        __interpretInstance.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
-                                        return;
-                                    }
-                                    catch (e:Dynamic) {
-                                        interpret.Env.catchInterpretableException(e, __interpretClass, __interpretInstance);
-                                        $i{dynCallBrokenName} = true;
+                                        catch (e:Dynamic) {
+                                            interpret.Env.catchInterpretableException(e, __interpretClass, __interpretInstance);
+                                            $i{dynCallBrokenName} = true;
+                                        }
                                     }
                                 }
                             };
                             case [false, false]: macro if (__interpretClass != null) {
                                 if (!$i{dynCallBrokenName}) {
-                                    try {
-                                        if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
-                                            __interpretInstance = __interpretClass.createInstance(null, this);
+                                    if (__interpretClass.skipFields == null || !__interpretClass.skipFields.exists($v{dynCallName})) {
+                                        try {
+                                            if (__interpretInstance == null || __interpretInstance.dynamicClass != __interpretClass) {
+                                                __interpretInstance = __interpretClass.createInstance(null, this);
+                                            }
+                                            var res = __interpretInstance.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
+                                            return res;
                                         }
-                                        var res = __interpretInstance.call($v{dynCallName}, $dynCallArgs, true, $v{argTypes});
-                                        return res;
-                                    }
-                                    catch (e:Dynamic) {
-                                        interpret.Env.catchInterpretableException(e, __interpretClass, __interpretInstance);
-                                        $i{dynCallBrokenName} = true;
+                                        catch (e:Dynamic) {
+                                            interpret.Env.catchInterpretableException(e, __interpretClass, __interpretInstance);
+                                            $i{dynCallBrokenName} = true;
+                                        }
                                     }
                                 }
                             };
@@ -271,6 +281,27 @@ class InterpretableMacro {
                 }]
             });
 
+            // Keep original class content
+            var fileContent:String = null;
+            if (FileSystem.exists(filePath) && !FileSystem.isDirectory(filePath)) {
+                fileContent = File.getContent(filePath);
+            }
+            fields.push({
+                pos: currentPos,
+                name: '__interpretOriginalContent',
+                kind: FVar(
+                    macro :String,
+                    macro $v{fileContent}
+                ),
+                access: [AStatic, APrivate],
+                doc: '',
+                meta: [{
+                    name: ':noCompletion',
+                    params: [],
+                    pos: currentPos
+                }]
+            });
+
             #if interpret_watch
             // Add watcher
             fields.push({
@@ -284,7 +315,7 @@ class InterpretableMacro {
                             if (interpretWillReloadClass != null) {
                                 interpretWillReloadClass(__interpretClass);
                             }
-                            __interpretClass = interpret.InterpretableTools.createInterpretClass($v{classPack}, $v{className}, content);
+                            __interpretClass = interpret.InterpretableTools.createInterpretClass($v{classPack}, $v{className}, content, __interpretOriginalContent);
                             if (__interpretClass == null) {
                                 trace('[warning] Failed to reload interpretable class from file at path: ' + $v{filePath});
                             }

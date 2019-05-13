@@ -32,6 +32,8 @@ class DynamicClass {
 
     public var env(default,null):Env;
 
+    public var skipFields(default,null):Map<String,Bool> = null;
+
     var didComputeSuperClass:Bool = false;
 
     var superDynamicClass:DynamicClass = null;
@@ -90,6 +92,8 @@ class DynamicClass {
 
         this.env = env;
         this.options = options;
+
+        skipFields = this.options.skipFields;
 
         computeHscript();
 
@@ -345,7 +349,7 @@ class DynamicClass {
                     modifiers.set(data.name, true);
 
                 case TField(data):
-                    if (data.kind == VAR && !interpretableOnly) {
+                    if (data.kind == VAR && !interpretableOnly && (skipFields == null || !skipFields.exists(data.name))) {
                         if (modifiers.exists('static')) {
                             classVars.set(data.name, true);
                             classPropertyList.push(data.name);
@@ -427,7 +431,7 @@ class DynamicClass {
                     }
 
                 case TField(data):
-                    if (data.kind == METHOD && (!interpretableOnly || interpretableField)) {
+                    if (data.kind == METHOD && (!interpretableOnly || interpretableField) && (skipFields == null || !skipFields.exists(data.name))) {
                         var isStatic = modifiers.exists('static');
                         var result = isStatic ? classResult : instanceResult;
                         if (isStatic) {
@@ -652,5 +656,7 @@ typedef DynamicClassOptions = {
     @:optional var usings:ResolveUsings;
 
     @:optional var moduleOptions:ModuleOptions;
+
+    @:optional var skipFields:Map<String,Bool>;
 
 } //DynamicClassOptions
