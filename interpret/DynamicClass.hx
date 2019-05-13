@@ -374,7 +374,7 @@ class DynamicClass {
                     modifiers.set(data.name, true);
 
                 case TField(data):
-                    if (data.kind == VAR && !interpretableOnly && (skipFields == null || !skipFields.exists(data.name))) {
+                    if (data.kind == VAR && (!interpretableOnly || interpretableTargetType) && (skipFields == null || !skipFields.exists(data.name))) {
                         if (modifiers.exists('static')) {
                             classVars.set(data.name, true);
                             classPropertyList.push(data.name);

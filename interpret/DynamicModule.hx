@@ -336,10 +336,17 @@ class DynamicModule {
                             currentFieldName = data.name;
                             var isStatic = modifiers.exists('static');
                             
-                            // When filtering with interpretableOnly, skip vars as it only works
-                            // on methods for now
-                            if (data.kind == VAR && !interpretableOnly) {
-                                module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_VAR, isStatic, data.type);
+                            // When filtering with interpretableOnly, skip vars, or the ones
+                            // that already exist in native class if whole class is interpretable
+                            if (data.kind == VAR) {
+                                if (!interpretableOnly || (interpretableType && originalFields != null && !originalFields.exists(currentClassName + '.' + data.name))) {
+                                    module.add(currentClassPath + '.' + data.name, null, ModuleItemKind.CLASS_VAR, isStatic, data.type);
+                                }
+                                else if (interpretableOnly) {
+                                    if (currentClassSkipFields != null) {
+                                        currentClassSkipFields.set(data.name, true);
+                                    }
+                                }
                             }
                             else if (data.kind == METHOD) {
 
