@@ -47,8 +47,13 @@ class InterpretableMacro {
                         hasFieldsWithInterpretMeta = true;
                         if (extraFields == null) extraFields = [];
 
-                        if (field.name == 'new' && (!classHasInterpretMeta || hasInterpretMeta(field.meta))) {
-                            throw "@interpret is not allowed on constructor";
+                        if (field.name == 'new') {
+                            if (!classHasInterpretMeta || hasInterpretMeta(field.meta)) {
+                                throw "@interpret is not allowed on constructor";
+                            }
+                            else {
+                                continue;
+                            }
                         }
 
                         // Is it a static call?
