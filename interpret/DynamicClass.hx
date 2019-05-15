@@ -95,7 +95,7 @@ class DynamicClass {
 
         skipFields = this.options.skipFields;
 
-        computeHscript();
+        if (!options.noComputeHscript) computeHscript();
 
     } //new
 
@@ -690,5 +690,7 @@ typedef DynamicClassOptions = {
     @:optional var moduleOptions:ModuleOptions;
 
     @:optional var skipFields:Map<String,Bool>;
+
+    @:optional var noComputeHscript:Bool;
 
 } //DynamicClassOptions

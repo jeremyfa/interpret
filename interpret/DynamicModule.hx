@@ -232,6 +232,8 @@ class DynamicModule {
 
         function consumeTokens(shallow:Bool) {
 
+            var toComputeHscript:Array<DynamicClass> = [];
+
             var currentClassPath:String = null;
             var currentClassName:String = null;
             var currentFieldName:String = null;
@@ -295,9 +297,13 @@ class DynamicModule {
                                     tokens: converter.tokens,
                                     targetClass: data.name,
                                     moduleOptions: options,
-                                    skipFields: currentClassSkipFields
+                                    skipFields: currentClassSkipFields,
+                                    noComputeHscript: true
                                 });
-                                if (!shallow) module.dynamicClasses.set(data.name, dynClass);
+                                if (!shallow) {
+                                    toComputeHscript.push(dynClass);
+                                    module.dynamicClasses.set(data.name, dynClass);
+                                }
                                 currentClassPath = packagePrefix + (data.name == moduleName ? data.name : moduleName + '.' + data.name);
                                 module.add(currentClassPath, null, ModuleItemKind.CLASS);
                                 if (!shallow) {
@@ -394,6 +400,10 @@ class DynamicModule {
 
                     default:                
                 }
+            }
+
+            for (dynClass in toComputeHscript) {
+                @:privateAccess dynClass.computeHscript();
             }
         }
 
