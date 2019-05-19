@@ -32,7 +32,7 @@ class DynamicPackage {
         if (module != null) {
             var resolved = module.items.get(fullPath);
             if (resolved != null) {
-                resolved = TypeUtils.unwrap(resolved, env);
+                //resolved = TypeUtils.unwrap(resolved, env);
                 resolvedSubs.set(subPath, resolved);
                 return resolved;
             }

@@ -34,7 +34,7 @@ class Host {
         env.addModule('test.native.NativeClass', DynamicModule.fromStatic(test.native.NativeClass));
         env.addModule('test.native.NativeInterface', DynamicModule.fromStatic(test.native.NativeInterface));
         env.addModule('test.native.NativeGroup', DynamicModule.fromStatic(test.native.NativeGroup));
-        #if (sys || nodejs)
+        #if (sys || nodejs || node || hxnodejs)
         env.addModule('Sys', DynamicModule.fromStatic(Sys));
         #end
 
@@ -161,37 +161,37 @@ class Host {
 
         #if host_test_10
         var dynClass = env.modules.get('test.script.ExtendedClass').dynamicClasses.get('ExtendedClass');
-        dynClass.call('gruntTest', ['Jérémy']);
+        dynClass.call('gruntTest', ['Jeremy']);
         #end
 
         #if host_test_11
         var dynClass = env.modules.get('test.script.ImplementingClass').dynamicClasses.get('ImplementingClass');
         var dynInst = dynClass.createInstance();
-        Sys.println('' + dynInst.call('isNativeInterface'));
+        Sys.println('' + !!dynInst.call('isNativeInterface'));
         #end
 
         #if host_test_12
         var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
         var dynInst = dynClass.createInstance();
-        Sys.println('' + dynInst.call('isBasicClass'));
+        Sys.println('' + !!dynInst.call('isBasicClass'));
         #end
 
         #if host_test_13
         var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
         var dynInst = dynClass.createInstance();
-        Sys.println('' + dynInst.call('isBasicClass2'));
+        Sys.println('' + !!dynInst.call('isBasicClass2'));
         #end
 
         #if host_test_14
         var dynClass = env.modules.get('test.script.ChildClass').dynamicClasses.get('ChildClass');
         var dynInst = dynClass.createInstance();
-        Sys.println('' + dynInst.call('isNativeClass'));
+        Sys.println('' + !!dynInst.call('isNativeClass'));
         #end
 
         #if host_test_15
         var dynClass = env.modules.get('test.script.NativeChildClass').dynamicClasses.get('NativeChildClass');
         var dynInst = dynClass.createInstance();
-        Sys.println('' + dynInst.call('isNativeClass'));
+        Sys.println('' + !!dynInst.call('isNativeClass'));
         #end
 
         #if host_test_16
@@ -328,32 +328,32 @@ class Host {
 
         #if host_test_37
         var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
-        Sys.println('' + dynClass.call('nativeGroupClass1IsClass1'));
+        Sys.println('' + !!dynClass.call('nativeGroupClass1IsClass1'));
         #end
 
         #if host_test_38
         var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
-        Sys.println('' + dynClass.call('nativeGroupClass1IsClass2'));
+        Sys.println('' + !!dynClass.call('nativeGroupClass1IsClass2'));
         #end
 
         #if host_test_39
         var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
-        Sys.println('' + dynClass.call('nativeGroupClass2IsClass1'));
+        Sys.println('' + !!dynClass.call('nativeGroupClass2IsClass1'));
         #end
 
         #if host_test_40
         var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
-        Sys.println('' + dynClass.call('nativeGroupClass2IsClass2'));
+        Sys.println('' + !!dynClass.call('nativeGroupClass2IsClass2'));
         #end
 
         #if host_test_41
         var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
-        Sys.println('' + dynClass.call('nativeGroupClass1IsClass1'));
+        Sys.println('' + !!dynClass.call('nativeGroupClass1IsClass1'));
         #end
 
         #if host_test_42
         var dynClass = env.modules.get('test.script.OtherClass').dynamicClasses.get('OtherClass');
-        Sys.println('' + dynClass.call('nativeGroupClass2IsClass1'));
+        Sys.println('' + !!dynClass.call('nativeGroupClass2IsClass1'));
         #end
 
         #if host_test_43
@@ -400,32 +400,32 @@ class Host {
 
         #if host_test_51
         var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
-        Sys.println('' + dynClass.call('interpretedGroupClass1IsClass1'));
+        Sys.println('' + !!dynClass.call('interpretedGroupClass1IsClass1'));
         #end
 
         #if host_test_52
         var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
-        Sys.println('' + dynClass.call('interpretedGroupClass1IsClass2'));
+        Sys.println('' + !!dynClass.call('interpretedGroupClass1IsClass2'));
         #end
 
         #if host_test_53
         var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
-        Sys.println('' + dynClass.call('interpretedGroupClass2IsClass1'));
+        Sys.println('' + !!dynClass.call('interpretedGroupClass2IsClass1'));
         #end
 
         #if host_test_54
         var dynClass = env.modules.get('test.script.AltClass').dynamicClasses.get('AltClass');
-        Sys.println('' + dynClass.call('interpretedGroupClass2IsClass2'));
+        Sys.println('' + !!dynClass.call('interpretedGroupClass2IsClass2'));
         #end
 
         #if host_test_55
         var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
-        Sys.println('' + dynClass.call('interpretedGroupClass1IsClass1'));
+        Sys.println('' + !!dynClass.call('interpretedGroupClass1IsClass1'));
         #end
 
         #if host_test_56
         var dynClass = env.modules.get('test.script.AnotherClass').dynamicClasses.get('AnotherClass');
-        Sys.println('' + dynClass.call('interpretedGroupClass2IsClass1'));
+        Sys.println('' + !!dynClass.call('interpretedGroupClass2IsClass1'));
         #end
 
         #if host_test_57

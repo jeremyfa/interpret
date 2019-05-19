@@ -788,7 +788,11 @@ class Interpreter extends hscript.Interp {
             var item:RuntimeItem = cast instanciable;
             switch (item) {
                 case ClassItem(rawItem, moduleId, name):
-                    if (Std.is(rawItem, DynamicClass)) {
+                    if (rawItem == null) {
+                        var dynClass = env.resolveDynamicClass(moduleId, name);
+                        if (dynClass != null) return dynClass.createInstance(args);
+                    }
+                    else if (Std.is(rawItem, DynamicClass)) {
                         var dynClass:DynamicClass = cast rawItem;
                         return dynClass.createInstance(args);
                     }
@@ -809,7 +813,7 @@ class Interpreter extends hscript.Interp {
             return Type.createInstance(instanciable, args);
         }
 
-        //trace('cnew $instanciable $cl $args');
+        trace('cnew $instanciable $cl $args');
         return super.cnew(cl, args);
 
     } //cnew

@@ -130,11 +130,16 @@ class DynamicInstance {
 
     public function get(name:String, unwrap:Bool = true):Dynamic {
 
+        //trace('DYN INST GET $name');
+
         var useSuperClass = null;
 
         if (!dynamicClass.instanceVars.exists(name) && !dynamicClass.instanceMethods.exists(name)) {
+            //trace('NEED CHECK');
             if (dynamicClass.superDynamicClass != null || dynamicClass.superStaticClass == null) {
+                //trace('has field / ' + dynamicClass.superDynamicClass + ' / ' + dynamicClass.superStaticClass);
                 var superClass = dynamicClass.superDynamicClass;
+                //trace('super $superClass');
                 var exists = false;
                 while (superClass != null) {
                     if (superClass.instanceVars.exists(name) || superClass.instanceMethods.exists(name)) {
@@ -259,7 +264,7 @@ class DynamicInstance {
             args = _args;
         }
 
-        var rawRes = Reflect.callMethod(null, method, args != null ? args : NO_ARGS);
+        var rawRes:Dynamic = Reflect.callMethod(null, method, args != null ? args : NO_ARGS);
         return unwrap ? TypeUtils.unwrap(rawRes, dynamicClass.env) : rawRes;
 
     } //call

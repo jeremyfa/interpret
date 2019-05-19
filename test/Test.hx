@@ -70,8 +70,8 @@ class Test extends buddy.SingleSuite {
                 run('extending_class extended_class test_09').should.be('Encoded: J%C3%A9r%C3%A9my');
             });
 
-            it("ExtendedClass.gruntTest('Jérémy') -> 'JÉRÉMY!!!'", {
-                run('extending_class extended_class test_10').should.be('JÉRÉMY!!!');
+            it("ExtendedClass.gruntTest('Jeremy') -> 'JEREMY!!!'", {
+                run('extending_class extended_class test_10').should.be('JEREMY!!!');
             });
 
         });
@@ -437,16 +437,32 @@ class Test extends buddy.SingleSuite {
         (a preset become a preprocessor define when compiling haxe) */
     function run(preset:String):String {
 
+        #if test_cpp
+
+        var buildArgs:Array<String> = [
+            '-main', 'test.Host',
+            '-cp', '.',
+            '-lib', 'hscript',
+            '-cpp', 'bin/cpp/host',
+            '-debug',
+            '-D', 'interpretable',
+            '-dce', 'no'
+        ];
+
+        #else // js
+
         var buildArgs:Array<String> = [
             '-main', 'test.Host',
             '-cp', '.',
             '-lib', 'hxnodejs',
             '-lib', 'hscript',
-            '-js', 'host.js',
+            '-js', 'bin/host.js',
             '-debug',
             '-D', 'interpretable',
             '-dce', 'no'
         ];
+
+        #end
 
         for (item in preset.split(' ')) {
             buildArgs.push('-D');
@@ -459,12 +475,23 @@ class Test extends buddy.SingleSuite {
             stdio: 'inherit'
         });
 
+        #if test_cpp
+
+        // Run
+        proc = spawnSync('bin/cpp/host/Host-debug', [], {
+            cwd: js.Node.__dirname
+        });
+
+        #else //js
+        
         // Run
         proc = spawnSync('node', [
-            'host.js'
+            'bin/host.js'
         ], {
             cwd: js.Node.__dirname
         });
+
+        #end
 
         var out = '' + proc.stdout;
         var err = '' + proc.stderr;
