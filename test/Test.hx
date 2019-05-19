@@ -34,6 +34,10 @@ class Test extends buddy.SingleSuite {
                 run('basic_class test_03').should.be('Hi Test 03!');
             });
 
+            it("new BasicClass().mathDotPiPlus3('') -> '6.141592'", {
+                run('basic_class test_83').should.be('6.141592');
+            });
+
         });
 
         describe("Field access in subclasses", {

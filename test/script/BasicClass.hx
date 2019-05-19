@@ -129,6 +129,12 @@ class BasicClass {
 
     } //staticHello
 
+    public function mathDotPiPlus3() {
+
+        trace(('' + (Math.PI + 3)).substr(0, 8));
+
+    } //mathDotPiPlus3
+
     public static function nativeGroupClass1IsClass1() {
 
         return new test.native.NativeGroup.Class1().isClass1();

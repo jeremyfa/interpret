@@ -118,6 +118,12 @@ class Host {
         dynInst.call('hi', ['Test 03']);
         #end
 
+        #if host_test_83
+        var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        var dynInst = dynClass.createInstance();
+        dynInst.call('mathDotPiPlus3');
+        #end
+
         #if host_test_04
         var dynClass = env.modules.get('test.script.ChildClass').dynamicClasses.get('ChildClass');
         var dynInst = dynClass.createInstance();

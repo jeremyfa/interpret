@@ -91,6 +91,8 @@ class Interpreter extends hscript.Interp {
 
     override function resolve(id:String):Dynamic {
 
+        //trace('RESOLVE $id');
+
         var l = locals.get(id);
         if (l != null) {
             return l.r;
@@ -475,7 +477,7 @@ class Interpreter extends hscript.Interp {
                     var key = name + '.' + f;
                     if (module.items.exists(key)) {
                         var item = module.items.get(key);
-                        return unwrapExtensionItem(item);
+                        return unwrapIfUnwrappable(item);
                     }
                     else if (existsAsExtension(f)) {
                         var typePath = TypeUtils.typeOf(o, env);
@@ -812,7 +814,7 @@ class Interpreter extends hscript.Interp {
 
     } //cnew
 
-    function unwrapExtensionItem(value:Dynamic):Dynamic {
+    function unwrapIfUnwrappable(value:Dynamic):Dynamic {
 
         if (value == null) return null;
         if (Std.is(value, RuntimeItem)) {
@@ -831,7 +833,8 @@ class Interpreter extends hscript.Interp {
                                 var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
                                 if (dynClass != null) return dynClass.get(name.substring(dotIndex + 1));
                             }
-                            return rawItem;
+                            if (argTypes != null) return subItem;
+                            return TypeUtils.wrapIfNeeded(rawItem, type, env);
                         case ClassItem(rawItem, moduleId, name):
                             if (rawItem == null) {
                                 var dynClass = env.resolveDynamicClass(moduleId, name);
@@ -841,8 +844,16 @@ class Interpreter extends hscript.Interp {
                         default:
                             return subItem;
                     }
+                case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
+                    if (rawItem == null) {
+                        var dotIndex = name.lastIndexOf('.');
+                        var dynClass = env.resolveDynamicClass(moduleId, name.substring(0, dotIndex));
+                        if (dynClass != null) return dynClass.get(name.substring(dotIndex + 1));
+                    }
+                    if (argTypes != null) return item;
+                    return TypeUtils.wrapIfNeeded(rawItem, type, env);
                 default:
-                    return value;
+                    return item;
             }
         }
 
