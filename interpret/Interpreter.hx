@@ -132,14 +132,14 @@ class Interpreter extends hscript.Interp {
                 var prevUnresolved = dynInst.interpreter._unresolved;
                 dynInst.interpreter._queryingInterpreter = this;
                 dynInst.interpreter._unresolved = Unresolved.UNRESOLVED;
-                var result = dynInst.get(id, false);
+                var result:Dynamic = dynInst.get(id, false);
                 dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
                 dynInst.interpreter._unresolved = prevUnresolved;
                 if (result != Unresolved.UNRESOLVED) {
                     return result;
                 }
             } else {
-                var result = super.get(superInstance, id);
+                var result:Dynamic = super.get(superInstance, id);
                 if (result != null || Reflect.hasField(superInstance, id) || Reflect.hasField(superInstance, 'get_' + id)) {
                     if (Reflect.isFunction(result)) {
                         // Bind superClass context
@@ -161,13 +161,13 @@ class Interpreter extends hscript.Interp {
         }
         if (self.exists('__interpretClass')) {
             var dynClass:DynamicClass = self.get('__interpretClass');
-            var result = dynClass.get(id, false);
+            var result:Dynamic = dynClass.get(id, false);
             if (result != Unresolved.UNRESOLVED) {
                 return result;
             }
         }
         if (variables.exists(id)) {
-            var result = variables.get(id);
+            var result:Dynamic = variables.get(id);
             if (id == 'trace') {
                 if (env.trace != null) return env.trace;
                 else return variables.get('trace');
@@ -207,7 +207,7 @@ class Interpreter extends hscript.Interp {
             }
             if (classSelf.exists('__interpretClass')) {
                 var dynClass:DynamicClass = classSelf.get('__interpretClass');
-                var result = dynClass.get(id, false);
+                var result:Dynamic = dynClass.get(id, false);
                 if (result != Unresolved.UNRESOLVED) {
                     return result;
                 }
@@ -286,15 +286,15 @@ class Interpreter extends hscript.Interp {
                         var prevUnresolved = dynInst.interpreter._unresolved;
                         dynInst.interpreter._queryingInterpreter = this;
                         dynInst.interpreter._unresolved = Unresolved.UNRESOLVED;
-                        var result = dynInst.set(id, v, false);
+                        var result:Dynamic = dynInst.set(id, v, false);
                         dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
                         dynInst.interpreter._unresolved = prevUnresolved;
                         if (result != Unresolved.UNRESOLVED) {
                             return result;
                         }
                     } else {
-                        var result = Reflect.field(superInstance, id);
-                        var setter_result = Reflect.field(superInstance, 'set_' + id);
+                        var result:Dynamic = Reflect.field(superInstance, id);
+                        var setter_result:Dynamic = Reflect.field(superInstance, 'set_' + id);
                         if (result != null || setter_result != null || Reflect.hasField(superInstance, id) || Reflect.hasField(superInstance, 'set_' + id)) {
                             Reflect.setProperty(superInstance, id, unwrap(v));
                             return v;
@@ -345,7 +345,7 @@ class Interpreter extends hscript.Interp {
                 return self.get(f);
             }
             else if (variables.exists(f)) {
-                var result = variables.get(f);
+                var result:Dynamic = variables.get(f);
                 if (Reflect.isFunction(result)) {
                     // TODO cache?
                     if (classInterpreter != null) {
@@ -405,7 +405,7 @@ class Interpreter extends hscript.Interp {
                     var type = clazz != null ? Type.getClassName(clazz) : null;
                     var fieldTypePath = type + '.' + f;
                     var item = env.resolveItemByTypePath(fieldTypePath);
-                    var result = super.get(superInstance, f);
+                    var result:Dynamic = super.get(superInstance, f);
                     if (item != null && result != null) {
                         switch (item) {
                             case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes):
@@ -515,7 +515,7 @@ class Interpreter extends hscript.Interp {
             var dynInst:DynamicInstance = cast o;
             var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
             dynInst.interpreter._queryingInterpreter = this;
-            var result = dynInst.get(f);
+            var result:Dynamic = dynInst.get(f);
             dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
@@ -524,7 +524,7 @@ class Interpreter extends hscript.Interp {
             dynClass.initIfNeeded();
             var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
             dynClass.interpreter._queryingInterpreter = this;
-            var result = dynClass.get(f, false);
+            var result:Dynamic = dynClass.get(f, false);
             dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
@@ -646,7 +646,7 @@ class Interpreter extends hscript.Interp {
             var dynInst:DynamicInstance = cast o;
             var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
             dynInst.interpreter._queryingInterpreter = this;
-            var result = dynInst.set(f, v, false);
+            var result:Dynamic = dynInst.set(f, v, false);
             dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
@@ -655,7 +655,7 @@ class Interpreter extends hscript.Interp {
             dynClass.initIfNeeded();
             var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
             dynClass.interpreter._queryingInterpreter = this;
-            var result = dynClass.set(f, v, false);
+            var result:Dynamic = dynClass.set(f, v, false);
             dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }

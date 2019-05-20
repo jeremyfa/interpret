@@ -116,7 +116,10 @@ class DynamicClass {
 
         initIfNeeded();
 
+        //trace('CLASS GET? $name');
+
         if (!classVars.exists(name) && !classMethods.exists(name)) {
+            //trace('not in classVars or classMethods');
             if (superDynamicClass != null || superStaticClass == null) {
                 var superClass = this.superDynamicClass;
                 var exists = false;
@@ -143,8 +146,8 @@ class DynamicClass {
         var prevSelf = interpreter._self;
         interpreter._self = context;
 
-        var rawRes = interpreter.get(context, name);
-        var result = unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
+        var rawRes:Dynamic = interpreter.get(context, name);
+        var result:Dynamic = unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
 
         interpreter._self = prevSelf;
 
@@ -189,7 +192,7 @@ class DynamicClass {
         var prevUnresolved = interpreter._unresolved;
         interpreter._unresolved = Unresolved.UNRESOLVED;
 
-        var result = get(name);
+        var result:Dynamic = get(name);
 
         interpreter._unresolved = prevUnresolved;
 
@@ -204,8 +207,8 @@ class DynamicClass {
         var prevSelf = interpreter._self;
         interpreter._self = context;
 
-        var rawRes = interpreter.set(context, name, value);
-        var result = unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
+        var rawRes:Dynamic = interpreter.set(context, name, value);
+        var result:Dynamic = unwrap ? TypeUtils.unwrap(rawRes, env) : rawRes;
 
         interpreter._self = prevSelf;
 
