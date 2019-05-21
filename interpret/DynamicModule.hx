@@ -470,8 +470,10 @@ class DynamicModule {
                     // Type
                     var rawTypePath = t.toString();
 
-                    // Workaround needed on haxe 4?
-                    if (rawTypePath.startsWith('_Sys.')) continue;
+                    // Sys class workarounds
+                    // Is there a cleaner way to handle this?
+                    if (typePath == 'Sys' && rawTypePath.startsWith('_Sys.')) continue;
+                    if (typePath == 'Sys' && rawTypePath == 'SysError') continue;
 
                     // Compute sub type paths and alias
                     var alias = null;
@@ -659,7 +661,7 @@ class DynamicModule {
                                             for (arg in args) {
                                                 argTypes.push(typeAsString(arg.t));
                                             }
-                                            var retType = typeAsString(fieldType);
+                                            var retType = typeAsString(ret);
                                             if (args.length > 0 && isStatic && field.isPublic) {
                                                 var extendedType:String = null;
                                                 switch (args[0].t) {
@@ -676,7 +678,8 @@ class DynamicModule {
                                                     retType,
                                                     argTypes,
                                                     extendedType,
-                                                    field.isPublic
+                                                    field.isPublic,
+                                                    field.isExtern
                                                 ]);
                                             } else {
                                                 toAdd.push([
@@ -686,7 +689,8 @@ class DynamicModule {
                                                     retType,
                                                     argTypes,
                                                     null,
-                                                    field.isPublic
+                                                    field.isPublic,
+                                                    field.isExtern
                                                 ]);
                                             }
                                         default:
@@ -782,23 +786,53 @@ class DynamicModule {
             }
             else if (item[1] == ModuleItemKind.CLASS_FUNC || item[1] == ModuleItemKind.CLASS_VAR) {
                 var isStatic:Bool = item[2];
+                var retType:String = item[3];
+                var argTypes:String = item[4];
                 var isPublic:Bool = item[6];
-                if (isStatic) {
-                    if (isPublic) {
-                        // Static class field (public)
-                        var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
-                        addExprs.push(expr);
+                var isExtern:Bool = item[7];
+                if (item[1] == ModuleItemKind.CLASS_FUNC && isExtern) {
+                    if (isStatic) {
+                        if (isPublic) {
+                            // Static class field (public)
+                            if (item[0] == 'Std.int') {
+                                // Kind of hardcoded case for now
+                                var expr = macro mod.add($v{item[0]}, function(value:Dynamic):Int { return Std.int(value); }, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
+                                addExprs.push(expr);
+                            }
+                            else {
+                                // Skip any other extern function for now
+                            }
+                        }
+                        else {
+                            // Static class field (private)
+                            var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
+                            addExprs.push(expr);
+                        }
                     }
                     else {
-                        // Static class field (private)
-                        var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
+                        // Instance class field
+                        var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]});
                         addExprs.push(expr);
                     }
                 }
                 else {
-                    // Instance class field
-                    var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]});
-                    addExprs.push(expr);
+                    if (isStatic) {
+                        if (isPublic) {
+                            // Static class field (public)
+                            var expr = macro mod.add($v{item[0]}, $p{item[0].split('.')}, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
+                            addExprs.push(expr);
+                        }
+                        else {
+                            // Static class field (private)
+                            var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]}, $v{item[5]});
+                            addExprs.push(expr);
+                        }
+                    }
+                    else {
+                        // Instance class field
+                        var expr = macro mod.add($v{item[0]}, null, $v{item[1]}, $v{item[2]}, $v{item[3]}, $v{item[4]});
+                        addExprs.push(expr);
+                    }
                 }
             }
             else {

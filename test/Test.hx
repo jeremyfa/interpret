@@ -449,6 +449,18 @@ class Test extends buddy.SingleSuite {
             '-dce', 'no'
         ];
 
+        #elseif test_hl
+
+        var buildArgs:Array<String> = [
+            '-main', 'test.Host',
+            '-cp', '.',
+            '-lib', 'hscript',
+            '-hl', 'bin/host.hl',
+            '-debug',
+            '-D', 'interpretable',
+            '-dce', 'no'
+        ];
+
         #else // js
 
         var buildArgs:Array<String> = [
@@ -479,6 +491,13 @@ class Test extends buddy.SingleSuite {
 
         // Run
         proc = spawnSync('bin/cpp/host/Host-debug', [], {
+            cwd: js.Node.__dirname
+        });
+
+        #elseif test_hl
+
+        // Run
+        proc = spawnSync('hl bin/host.hl', [], {
             cwd: js.Node.__dirname
         });
 

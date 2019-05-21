@@ -103,6 +103,7 @@ class Host {
 
         #if host_test_01
         var dynClass = env.modules.get('test.script.BasicClass').dynamicClasses.get('BasicClass');
+        trace('dynClass: $dynClass');
         dynClass.call('staticHello', ['Test 01']);
         #end
 
