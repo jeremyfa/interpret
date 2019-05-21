@@ -22,33 +22,33 @@ class ConvertHaxe {
 
 /// Convert
 
-    var i = 0;
+    var i:Int = 0;
 
-    var len = 0;
+    var len:Int = 0;
 
-    var c = '';
+    var c:String = '';
 
-    var cc = '';
+    var cc:String = '';
 
-    var after = '';
+    var after:String = '';
 
-    var cleanedC = '';
+    var cleanedC:String = '';
 
-    var cleanedCC = '';
+    var cleanedCC:String = '';
 
-    var cleanedAfter = '';
+    var cleanedAfter:String = '';
 
-    var word = '';
+    var word:String = '';
 
-    var openBraces = 0;
+    var openBraces:Int = 0;
 
-    var openParens = 0;
+    var openParens:Int = 0;
 
-    var openBrackets = 0;
+    var openBrackets:Int = 0;
 
-    var inClassBraces = -1;
+    var inClassBraces:Int = -1;
 
-    var inEnumBraces = -1;
+    var inEnumBraces:Int = -1;
 
     public function convert():Void {
 
@@ -235,15 +235,16 @@ class ConvertHaxe {
 
     inline function updateWord() {
 
+        var result:String = '';
+
         if (i > 0 && RE_SEP_WORD.match(haxe.charAt(i-1) + after)) {
-            word = RE_SEP_WORD.matched(1);
+            result = RE_SEP_WORD.matched(1);
         }
         else if (i == 0 && RE_WORD.match(after)) {
-            word = RE_WORD.matched(0);
+            result = RE_WORD.matched(0);
         }
-        else {
-            word = '';
-        }
+        
+        word = result;
 
     } //updateWord
 
