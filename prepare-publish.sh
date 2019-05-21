@@ -7,3 +7,4 @@ rm main.js.map
 rm test.js
 rm test.js.map
 rm -rf node_modules
+rm -rf bin
