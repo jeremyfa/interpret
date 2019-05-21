@@ -497,7 +497,7 @@ class Test extends buddy.SingleSuite {
         #elseif test_hl
 
         // Run
-        proc = spawnSync('hl bin/host.hl', [], {
+        proc = spawnSync('hl', ['bin/host.hl'], {
             cwd: js.Node.__dirname
         });
 
