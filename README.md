@@ -52,8 +52,8 @@ Run it with: `haxe sample-livereload.hxml`
 
 ### Install the dependency
 
-- Add "-lib interpret:git:https://github.com/jeremyfa/interpret#master" in your build.hxml file
-- haxelib install build.hxml
+- Add `-lib interpret` in your build.hxml file
+- `haxelib install build.hxml`
 
 ### Init interpret
 
@@ -67,7 +67,7 @@ import interpret.LiveReload;
 // init function called once at startup
 function init() {
     Env.configureInterpretableEnv = function(env) {
-        env.addModule('myGame.ReloadableClass', DynamicModule.fromStatic(myGame.ReloadableClass));
+        env.addModule('myapp.ReloadableClass', DynamicModule.fromStatic(myapp.ReloadableClass));
     };
     LiveReload.start();
     
@@ -85,14 +85,14 @@ function update(dt:Float) {
 
 Create the ReloadableClass.hx in your project :
 ```hx
-package myGame.ReloadableClass;
+package myapp.ReloadableClass;
 
-@:nullSafety(Off) // null safety currently not support by the macro, add this if you use nullSafety it in your project
+@:nullSafety(Off) // null safety currently not supported by interpret macro, add this if you use nullSafety it in your project
 class ReloadableClass implements interpret.Interpretable { // Add "implements interpret.Interpretable"
     public function new() {}
 
     @interpret public function test():String { // Use @interpret on methods you want to hot reload
-        return "v15";
+        return "hello";
     }
 }
 ```
