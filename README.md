@@ -48,6 +48,61 @@ Check out the commented sample code at: [sample/LiveReloadSample.hx](sample/Live
 
 Run it with: `haxe sample-livereload.hxml`
 
+## Quick setup in a projet
+
+### Install the dependency
+
+- Add "-lib interpret:git:https://github.com/jeremyfa/interpret#master" in your build.hxml file
+- haxelib install build.hxml
+
+### Init interpret
+
+in your init script :
+```hx
+// in imports
+import interpret.Env;
+import interpret.DynamicModule;
+import interpret.LiveReload;
+
+// init function called once at startup
+function init() {
+    Env.configureInterpretableEnv = function(env) {
+        env.addModule('myGame.ReloadableClass', DynamicModule.fromStatic(myGame.ReloadableClass));
+    };
+    LiveReload.start();
+    
+    // (…)
+}
+
+// main loop function
+function update(dt:Float) {
+    LiveReload.tick(dt);
+    // (…)
+}
+```
+
+### Create a Reloadable class (or make an existing class reloadable)
+
+Create the ReloadableClass.hx in your project :
+```hx
+package myGame.ReloadableClass;
+
+@:nullSafety(Off) // null safety currently not support by the macro, add this if you use nullSafety it in your project
+class ReloadableClass implements interpret.Interpretable { // Add "implements interpret.Interpretable"
+    public function new() {}
+
+    @interpret public function test():String { // Use @interpret on methods you want to hot reload
+        return "v15";
+    }
+}
+```
+
+### Compile and run
+
+- Compile and run your project.
+- At runtime, edit and save the ReloadableClass.hx. You should see in console: `interpret/macros/InterpretableMacro.hx:321: File changed at path <path>`. If no error appeared the class is reloaded and the new code is being executed!
+
+
 ## What works?
 
 To see what haxe features are supported, you can take a look at the haxe files in [test script directory](/test/script/), which are all tested and compatible with **interpret**.
