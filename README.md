@@ -66,17 +66,17 @@ import interpret.LiveReload;
 
 // init function called once at startup
 function init() {
-		Env.configureInterpretableEnv = function(env) {
-			env.addModule('myGame.ReloadableClass', DynamicModule.fromStatic(myGame.ReloadableClass));
-		};
-		LiveReload.start();
+    Env.configureInterpretableEnv = function(env) {
+        env.addModule('myGame.ReloadableClass', DynamicModule.fromStatic(myGame.ReloadableClass));
+    };
+    LiveReload.start();
     
     // (…)
 }
 
 // main loop function
 function update(dt:Float) {
-		LiveReload.tick(dt);
+    LiveReload.tick(dt);
     // (…)
 }
 ```
@@ -87,21 +87,20 @@ Create the ReloadableClass.hx in your project :
 ```hx
 package myGame.ReloadableClass;
 
-
 @:nullSafety(Off) // null safety currently not support by the macro, add this if you use nullSafety it in your project
 class ReloadableClass implements interpret.Interpretable { // Add "implements interpret.Interpretable"
-	public function new() {}
+    public function new() {}
 
-	@interpret public function test():String { // Use @interpret on methods you want to hot reload
-		return "v15";
-	}
+    @interpret public function test():String { // Use @interpret on methods you want to hot reload
+        return "v15";
+    }
 }
 ```
 
 ### Compile and run
 
 - Compile and run your project.
-- At runtime, edit and save the ReloadableClass.hx. You should see in console : `interpret/macros/InterpretableMacro.hx:321: File changed at path <path>`. If no error appeared the class is reloaded and the new code is being executed !
+- At runtime, edit and save the ReloadableClass.hx. You should see in console: `interpret/macros/InterpretableMacro.hx:321: File changed at path <path>`. If no error appeared the class is reloaded and the new code is being executed!
 
 
 ## What works?
