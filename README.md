@@ -52,7 +52,12 @@ Run it with: `haxe sample-livereload.hxml`
 
 ### Install the dependency
 
-- Add `-lib interpret` in your build.hxml file
+- Add into your build.hxml file:
+```
+-lib interpret
+-D interpretable
+-D interpret_watch
+```
 - `haxelib install build.hxml`
 
 ### Init interpret
