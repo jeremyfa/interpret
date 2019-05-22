@@ -48,7 +48,7 @@ Check out the commented sample code at: [sample/LiveReloadSample.hx](sample/Live
 
 Run it with: `haxe sample-livereload.hxml`
 
-## Quick setup in a projet
+## Quick setup in a project
 
 ### Install the dependency
 
