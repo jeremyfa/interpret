@@ -678,8 +678,8 @@ class DynamicModule {
                                                     retType,
                                                     argTypes,
                                                     extendedType,
-                                                    field.isPublic,
-                                                    field.isExtern
+                                                    field.isPublic
+                                                    #if (haxe_ver >= "4.0.0"), field.isExtern #end
                                                 ]);
                                             } else {
                                                 toAdd.push([
@@ -689,8 +689,8 @@ class DynamicModule {
                                                     retType,
                                                     argTypes,
                                                     null,
-                                                    field.isPublic,
-                                                    field.isExtern
+                                                    field.isPublic
+                                                    #if (haxe_ver >= "4.0.0"), field.isExtern #end
                                                 ]);
                                             }
                                         default:
@@ -789,7 +789,7 @@ class DynamicModule {
                 var retType:String = item[3];
                 var argTypes:String = item[4];
                 var isPublic:Bool = item[6];
-                var isExtern:Bool = item[7];
+                var isExtern:Bool = #if (haxe_ver >= "4.0.0") item[7] #else false #end;
                 if (item[1] == ModuleItemKind.CLASS_FUNC && isExtern) {
                     if (isStatic) {
                         if (isPublic) {
