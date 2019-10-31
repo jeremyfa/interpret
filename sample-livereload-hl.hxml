@@ -1,0 +1,9 @@
+-lib hscript:2.3.0
+-main sample.LiveReloadSample
+-cp .
+-debug
+-D interpretable
+-D interpret_watch
+-D interpret_mute_import_warnings
+
+-hl bin/run.hl

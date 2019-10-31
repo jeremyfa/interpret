@@ -23,6 +23,9 @@ class InterpretableMacro {
         var hasFieldsWithInterpretMeta = false;
 
         var localClass = Context.getLocalClass().get();
+        // add a meta to prevent that class to be altered by dce, and depending classes
+        localClass.meta.add(":keepSub", [], currentPos);
+
         var classHasInterpretMeta = hasInterpretMeta(localClass.meta.get());
 
         var filePath = Context.getPosInfos(localClass.pos).file;
@@ -318,7 +321,7 @@ class InterpretableMacro {
                 kind: FVar(
                     macro :interpret.LiveReload,
                     macro new interpret.LiveReload($v{filePath}, function(content:String) {
-                        trace('File changed at path ' + $v{filePath});
+                        //trace('File changed at path ' + $v{filePath});
                         try {
                             if (interpretWillReloadClass != null) {
                                 interpretWillReloadClass(__interpretClass);
@@ -344,8 +347,13 @@ class InterpretableMacro {
                     name: ':noCompletion',
                     params: [],
                     pos: currentPos
+                }, {
+                    name: ':keepSub',
+                    params: [],
+                    pos: currentPos
                 }]
             });
+
             #end
 
         }
