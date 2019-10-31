@@ -467,6 +467,9 @@ class DynamicModule {
         for (item in module) {
             switch (item) {
                 case TInst(t, params):
+                    // add a meta to prevent that class to be altered by dce
+                    t.get().meta.add(":keepSub", [], currentPos);
+
                     // Type
                     var rawTypePath = t.toString();
 
