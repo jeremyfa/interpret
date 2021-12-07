@@ -82,6 +82,14 @@ class Env {
 
     } //addDefaultModules
 
+    /** Helper to simplify usual addModule() calls */
+    public macro function add(ethis, typePath:haxe.macro.Expr):haxe.macro.Expr {
+        return macro $ethis.addModule(
+            $v{haxe.macro.ExprTools.toString(typePath)},
+            interpret.DynamicModule.fromStatic($typePath)
+        );
+    }
+
     /** Add dynamic module */
     public function addModule(typePath:String, module:DynamicModule):Void {
 
