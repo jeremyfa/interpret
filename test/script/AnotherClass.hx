@@ -24,7 +24,7 @@ class AnotherClass {
 
     public function someInstanceMethod2() {
 
-        return Std.is(this, AnotherClass) ? 'true' : 'false';
+        return Std.isOfType(this, AnotherClass) ? 'true' : 'false';
 
     } //someInstanceMethod2
 

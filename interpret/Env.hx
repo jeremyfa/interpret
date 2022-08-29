@@ -75,7 +75,7 @@ class Env {
         var stdModule:DynamicModule = DynamicModule.fromStatic(Std);
 
         // Patch Std.is to work in scripting env
-        stdModule.items.set('Std.is', ClassFieldItem(is, stdModule.id, 'Std.is', true, 'Bool', [null, null]));
+        stdModule.items.set('Std.isOfType', ClassFieldItem(is, stdModule.id, 'Std.isOfType', true, 'Bool', [null, null]));
 
         addModule('Std', stdModule);
         addModule('String', DynamicModule.fromStatic(String));
@@ -224,23 +224,23 @@ class Env {
         var vType:String = null;
         var tClassType:String = null;
         
-        if (Std.is(v, DynamicClass._contextType) && v.exists('__interpretType')) {
+        if (Std.isOfType(v, DynamicClass._contextType) && v.exists('__interpretType')) {
             vType = v.get('__interpretType');
         }
-        else if (Std.is(v, DynamicClass) || Std.is(v, DynamicInstance)) {
+        else if (Std.isOfType(v, DynamicClass) || Std.isOfType(v, DynamicInstance)) {
             vType = TypeUtils.typeOf(v, this);
         }
 
-        if (Std.is(t, DynamicClass._contextType) && t.exists('__interpretType')) {
+        if (Std.isOfType(t, DynamicClass._contextType) && t.exists('__interpretType')) {
             tClassType = t.get('__interpretType');
         }
-        else if (Std.is(t, DynamicClass)) {
+        else if (Std.isOfType(t, DynamicClass)) {
             tClassType = TypeUtils.typeOf(t, this);
         }
 
         if (vType == null && tClassType == null) {
             // Nothing dynamic, use standard Std.is()
-            return Std.is(v, t);
+            return Std.isOfType(v, t);
         }
         else {
             // Need to do runtime checks

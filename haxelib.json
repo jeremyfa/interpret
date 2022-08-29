@@ -8,6 +8,6 @@
     "releasenote": "Fixes to make tests pass on JS, C++ and HL targets (more targets to be tested soon)",
     "contributors": ["jeremyfa"],
     "dependencies": {
-      "hscript": "2.4.0"
+      "hscript": "2.5.0"
     }
   }

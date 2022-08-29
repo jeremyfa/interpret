@@ -19,23 +19,23 @@ class TypeUtils {
     /** Return a type string (with dot path if any) from the given object */
     public static function typeOf(obj:Dynamic, ?env:Env):String {
 
-        if (Std.is(obj, String)) return 'String';
-        if (Std.is(obj, Int)) return 'Int';
-        if (Std.is(obj, Float)) return 'Float';
-        if (Std.is(obj, Bool)) return 'Bool';
-        if (Std.is(obj, Array)) return 'Array';
-        if (Std.is(obj, IMap)) return 'Map';
+        if (Std.isOfType(obj, String)) return 'String';
+        if (Std.isOfType(obj, Int)) return 'Int';
+        if (Std.isOfType(obj, Float)) return 'Float';
+        if (Std.isOfType(obj, Bool)) return 'Bool';
+        if (Std.isOfType(obj, Array)) return 'Array';
+        if (Std.isOfType(obj, IMap)) return 'Map';
 
-        if (Std.is(obj, DynamicClass)) {
+        if (Std.isOfType(obj, DynamicClass)) {
             var c:DynamicClass = cast obj;
             return c.classType;
         }
-        if (Std.is(obj, DynamicInstance)) {
+        if (Std.isOfType(obj, DynamicInstance)) {
             var i:DynamicInstance = cast obj;
             return i.dynamicClass.instanceType;
         }
 
-        if (Std.is(obj, RuntimeItem)) {
+        if (Std.isOfType(obj, RuntimeItem)) {
             var item:RuntimeItem = cast obj;
             switch (item) {
                 case ExtensionItem(item, extendedType):
@@ -58,13 +58,13 @@ class TypeUtils {
             }
         }
 
-        if (Std.is(obj, Class)) {
+        if (Std.isOfType(obj, Class)) {
             var classType = Type.getClassName(obj);
             if (classType == null) classType = 'Dynamic';
             return 'Class<'+classType+'>';
         }
 
-        if (Std.is(obj, Enum)) {
+        if (Std.isOfType(obj, Enum)) {
             var enumType = Type.getEnumName(obj);
             if (enumType == null) enumType = 'Dynamic';
             return 'Enum<'+enumType+'>';
@@ -133,7 +133,7 @@ class TypeUtils {
         if (value == null) return null;
         if (value == Unresolved.UNRESOLVED) return null;
 
-        if (Std.is(value, RuntimeItem)) {
+        if (Std.isOfType(value, RuntimeItem)) {
             var item:RuntimeItem = cast value;
             switch (item) {
                 case ExtensionItem(item, _) | SuperClassItem(item):
@@ -172,7 +172,7 @@ class TypeUtils {
             }
         }
 
-        if (Std.is(value, DynamicAbstract)) {
+        if (Std.isOfType(value, DynamicAbstract)) {
             var abs:DynamicAbstract = cast value;
             return abs.value;
         }
@@ -183,7 +183,7 @@ class TypeUtils {
 
     public static function wrapIfNeeded(value:Dynamic, type:String, ?env:Env):Dynamic {
 
-        if (value != null && Std.is(value, RuntimeItem)) {
+        if (value != null && Std.isOfType(value, RuntimeItem)) {
             // Already wrapped
             return value;
         }

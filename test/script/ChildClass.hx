@@ -11,7 +11,7 @@ class ChildClass extends BasicClass {
 
     public function isNativeClass() {
 
-        return Std.is(this, test.native.NativeClass);
+        return Std.isOfType(this, test.native.NativeClass);
 
     } //isNativeClass
 

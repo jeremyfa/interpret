@@ -126,7 +126,7 @@ class Interpreter extends hscript.Interp {
         }
         var superInstance = self.get('super');
         if (superInstance != null) {
-            if (Std.is(superInstance, DynamicInstance)) {
+            if (Std.isOfType(superInstance, DynamicInstance)) {
                 var dynInst:DynamicInstance = cast superInstance;
                 var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
                 var prevUnresolved = dynInst.interpreter._unresolved;
@@ -280,7 +280,7 @@ class Interpreter extends hscript.Interp {
                 }
                 var superInstance = self.get('super');
                 if (superInstance != null) {
-                    if (Std.is(superInstance, DynamicInstance)) {
+                    if (Std.isOfType(superInstance, DynamicInstance)) {
                         var dynInst:DynamicInstance = cast superInstance;
                         var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
                         var prevUnresolved = dynInst.interpreter._unresolved;
@@ -387,7 +387,7 @@ class Interpreter extends hscript.Interp {
             }
             var superInstance = self.get('super');
             if (superInstance != null) {
-                if (Std.is(superInstance, DynamicInstance)) {
+                if (Std.isOfType(superInstance, DynamicInstance)) {
                     var dynInst:DynamicInstance = cast superInstance;
                     var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
                     var prevUnresolved = dynInst.interpreter._unresolved;
@@ -466,7 +466,7 @@ class Interpreter extends hscript.Interp {
             }
             return null;
         }
-        else if (Std.is(o, RuntimeItem)) {
+        else if (Std.isOfType(o, RuntimeItem)) {
             //trace('is runtime item');
             var moduleItem:RuntimeItem = cast o;
             switch (moduleItem) {
@@ -511,7 +511,7 @@ class Interpreter extends hscript.Interp {
                     return null;
             }
         }
-        else if (Std.is(o, DynamicInstance)) {
+        else if (Std.isOfType(o, DynamicInstance)) {
             var dynInst:DynamicInstance = cast o;
             var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
             dynInst.interpreter._queryingInterpreter = this;
@@ -519,7 +519,7 @@ class Interpreter extends hscript.Interp {
             dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
-        else if (Std.is(o, DynamicClass)) {
+        else if (Std.isOfType(o, DynamicClass)) {
             var dynClass:DynamicClass = cast o;
             dynClass.initIfNeeded();
             var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
@@ -535,17 +535,17 @@ class Interpreter extends hscript.Interp {
                 return resolved;
             }
         }
-        else if (Std.is(o, DynamicAbstract)) {
+        else if (Std.isOfType(o, DynamicAbstract)) {
             var abs:DynamicAbstract = cast o;
             return abs.get(f, false);
         }
-        else if (Std.is(o, DynamicPackage)) {
+        else if (Std.isOfType(o, DynamicPackage)) {
             var dynPack:DynamicPackage = cast o;
             var sub = dynPack.getSub(f);
             //trace('sub($f) -> $sub');
             return sub;
         }
-        else if (Std.is(o, DynamicModule)) {
+        else if (Std.isOfType(o, DynamicModule)) {
             var dynMod:DynamicModule = cast o;
             var result = dynMod.items.get(dynMod.typePath + '.' + f);
             return unwrap(result);
@@ -609,7 +609,7 @@ class Interpreter extends hscript.Interp {
             }
             return v;
         }
-        if (Std.is(o, RuntimeItem)) {
+        if (Std.isOfType(o, RuntimeItem)) {
             var moduleItem:RuntimeItem = cast o;
             switch (moduleItem) {
                 case ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes) | ExtensionItem(ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes), _):
@@ -642,7 +642,7 @@ class Interpreter extends hscript.Interp {
                     return null;
             }
         }
-        else if (Std.is(o, DynamicInstance)) {
+        else if (Std.isOfType(o, DynamicInstance)) {
             var dynInst:DynamicInstance = cast o;
             var prevQueryingInterpreter = dynInst.interpreter._queryingInterpreter;
             dynInst.interpreter._queryingInterpreter = this;
@@ -650,7 +650,7 @@ class Interpreter extends hscript.Interp {
             dynInst.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
-        else if (Std.is(o, DynamicClass)) {
+        else if (Std.isOfType(o, DynamicClass)) {
             var dynClass:DynamicClass = cast o;
             dynClass.initIfNeeded();
             var prevQueryingInterpreter = dynClass.interpreter._queryingInterpreter;
@@ -659,7 +659,7 @@ class Interpreter extends hscript.Interp {
             dynClass.interpreter._queryingInterpreter = prevQueryingInterpreter;
             return result;
         }
-        else if (Std.is(o, DynamicAbstract)) {
+        else if (Std.isOfType(o, DynamicAbstract)) {
             var abs:DynamicAbstract = cast o;
             return abs.set(f, v, false);
         }
@@ -672,7 +672,7 @@ class Interpreter extends hscript.Interp {
 
         //trace('CALL $o $f $args');
 
-        if (Std.is(f, RuntimeItem)) {
+        if (Std.isOfType(f, RuntimeItem)) {
             switch (f) {
                 case ExtensionItem(ClassFieldItem(rawItem, moduleId, name, isStatic, type, argTypes), _):
                     if (rawItem == null) {
@@ -718,7 +718,7 @@ class Interpreter extends hscript.Interp {
                     if (dotIndex != -1) {
                         fieldName = fieldName.substring(dotIndex + 1);
                     }
-                    if (Std.is(o, DynamicAbstract)) {
+                    if (Std.isOfType(o, DynamicAbstract)) {
                         var abs:DynamicAbstract = cast o;
                         return abs.call(fieldName, args, false);
                     }
@@ -726,7 +726,7 @@ class Interpreter extends hscript.Interp {
                         return DynamicAbstract.callStatic(o, env, null, fieldName, args, false);
                     }
                 case EnumFieldItem(rawItem, _, _):
-                    if (Std.is(rawItem, DynamicClass)) {
+                    if (Std.isOfType(rawItem, DynamicClass)) {
                         return null; // TODO?
                     }
                     return Reflect.callMethod(o, rawItem, args);
@@ -784,7 +784,7 @@ class Interpreter extends hscript.Interp {
         var instanciable:Dynamic = resolveInstanciable(cl);
 
         // Abstract?
-        if (Std.is(instanciable, RuntimeItem)) {
+        if (Std.isOfType(instanciable, RuntimeItem)) {
             var item:RuntimeItem = cast instanciable;
             switch (item) {
                 case ClassItem(rawItem, moduleId, name):
@@ -792,11 +792,11 @@ class Interpreter extends hscript.Interp {
                         var dynClass = env.resolveDynamicClass(moduleId, name);
                         if (dynClass != null) return dynClass.createInstance(args);
                     }
-                    else if (Std.is(rawItem, DynamicClass)) {
+                    else if (Std.isOfType(rawItem, DynamicClass)) {
                         var dynClass:DynamicClass = cast rawItem;
                         return dynClass.createInstance(args);
                     }
-                    else if (Std.is(rawItem, Class)) {
+                    else if (Std.isOfType(rawItem, Class)) {
                         return Type.createInstance(rawItem, args);
                     }
                 case AbstractItem(rawItem, moduleId, name, runtimeType):
@@ -805,11 +805,11 @@ class Interpreter extends hscript.Interp {
             }
         }
         // Dynamic class?
-        if (Std.is(instanciable, DynamicClass)) {
+        if (Std.isOfType(instanciable, DynamicClass)) {
             var dynClass:DynamicClass = cast instanciable;
             return dynClass.createInstance(args);
         }
-        else if (Std.is(instanciable, Class)) {
+        else if (Std.isOfType(instanciable, Class)) {
             return Type.createInstance(instanciable, args);
         }
 
@@ -821,7 +821,7 @@ class Interpreter extends hscript.Interp {
     function unwrapIfUnwrappable(value:Dynamic):Dynamic {
 
         if (value == null) return null;
-        if (Std.is(value, RuntimeItem)) {
+        if (Std.isOfType(value, RuntimeItem)) {
             var item:RuntimeItem = cast value;
             switch (item) {
                 case ExtensionItem(subItem, _):
@@ -870,7 +870,7 @@ class Interpreter extends hscript.Interp {
         if (value == null) return null;
         if (value == Unresolved.UNRESOLVED) return null;
 
-        if (Std.is(value, RuntimeItem)) {
+        if (Std.isOfType(value, RuntimeItem)) {
             var item:RuntimeItem = cast value;
             switch (item) {
                 case ExtensionItem(subItem, _):
@@ -917,7 +917,7 @@ class Interpreter extends hscript.Interp {
             }
         }
         
-        if (Std.is(value, DynamicAbstract)) {
+        if (Std.isOfType(value, DynamicAbstract)) {
             var abs:DynamicAbstract = cast value;
             return abs.value;
         }

@@ -14,7 +14,7 @@ class ImplementingClass implements NativeInterface {
 
     public function isNativeInterface() {
 
-        return Std.is(this, NativeInterface);
+        return Std.isOfType(this, NativeInterface);
 
     } //isNativeInterface
 

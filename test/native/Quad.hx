@@ -9,7 +9,7 @@ class Quad {
     }
 
     public function colorInfo():String {
-        return 'isInt=' + (Std.is(color, Int) ? '1' : '0') + ' / ' + color.toWebString();
+        return 'isInt=' + (Std.isOfType(color, Int) ? '1' : '0') + ' / ' + color.toWebString();
     }
 
 } //Quad
