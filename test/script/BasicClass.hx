@@ -105,13 +105,13 @@ class BasicClass {
 
     public function isBasicClass() {
 
-        return Std.is(this, BasicClass);
+        return Std.isOfType(this, BasicClass);
 
     } //isBasicClass
 
     public function isBasicClass2() {
 
-        return Std.is(this, test.script.BasicClass);
+        return Std.isOfType(this, test.script.BasicClass);
 
     } //isBasicClass2
 
