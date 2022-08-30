@@ -1,4 +1,4 @@
--lib hscript:2.5.0
+-lib hscript:2.4.0
 -main sample.LiveReloadSample
 -cp .
 -debug
